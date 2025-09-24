@@ -19,7 +19,7 @@ RUN npm run build
 # Stage 2: Production Backend - Lightweight Python Runtime
 FROM python:3.12-slim AS production
 
-# Environment variables
+# Environment variables with AWS EB SSL compatibility
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/backend \
@@ -28,21 +28,38 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONHTTPSVERIFY=1 \
     SSL_CERT_DIR=/etc/ssl/certs \
     REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    OPENSSL_CONF=/etc/ssl/openssl.cnf
 
-# Install essential system dependencies with enhanced SSL support
+# Install essential system dependencies with enhanced SSL support for AWS EB
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     openssl \
     ca-certificates-java \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
     && update-ca-certificates \
-    && c_rehash /etc/ssl/certs/
+    && c_rehash /etc/ssl/certs/ \
+    && openssl version
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Create AWS EB compatible OpenSSL configuration
+RUN echo '[openssl_init]\n\
+providers = provider_sect\n\
+\n\
+[provider_sect]\n\
+default = default_sect\n\
+legacy = legacy_sect\n\
+\n\
+[default_sect]\n\
+activate = 1\n\
+\n\
+[legacy_sect]\n\
+activate = 1' > /etc/ssl/aws_openssl.cnf
 
 WORKDIR /app
 
@@ -53,17 +70,19 @@ ARG CACHEBUST=1
 # EXPLICITLY exclude torch, transformers, sentence-transformers
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
-    # Add explicit SSL support for Python
+    # Add explicit SSL support for Python and MongoDB
     "certifi>=2023.11.17" \
     "urllib3>=1.26.0" \
+    "pyOpenSSL>=23.0.0" \
     # FastAPI Core
     "fastapi>=0.109.1" \
     "uvicorn[standard]>=0.27.0" \
     "pydantic>=2.11.7" \
     "pydantic-settings>=2.0.3" \
-    # Database
+    # Database with explicit version for SSL compatibility
     "motor>=3.3.2" \
-    "pymongo>=4.6.1" \
+    "pymongo[srv]>=4.6.1" \
+    "dnspython>=2.4.0" \
     # Authentication
     "python-jose[cryptography]>=3.3.0" \
     "passlib[argon2,bcrypt]>=1.7.4" \
