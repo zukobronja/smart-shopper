@@ -1,0 +1,211 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-09-19T08:30:00.000Z",
+  "__export_source": "insomnia.desktop.app:v8.6.1",
+  "resources": [
+    {
+      "_id": "req_health_basic",
+      "_type": "request",
+      "name": "Health Check (Basic)",
+      "url": "{{ _.base_url }}/health",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Basic health check endpoint"
+    },
+    {
+      "_id": "req_health_v1",
+      "_type": "request", 
+      "name": "Health Check (V1)",
+      "url": "{{ _.base_url }}/v1/health",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Detailed V1 health check with version and environment info"
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "name": "Register User",
+      "url": "{{ _.base_url }}/auth/register",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"securepassword123\",\n  \"full_name\": \"John Doe\"\n}"
+      },
+      "description": "Register a new user with email and password"
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "name": "Login User", 
+      "url": "{{ _.base_url }}/auth/login",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/x-www-form-urlencoded"
+        }
+      ],
+      "body": {
+        "mimeType": "application/x-www-form-urlencoded",
+        "params": [
+          {
+            "name": "username",
+            "value": "john.doe@example.com"
+          },
+          {
+            "name": "password", 
+            "value": "securepassword123"
+          }
+        ]
+      },
+      "description": "Login with email and password (OAuth2 form format)"
+    },
+    {
+      "_id": "req_me",
+      "_type": "request",
+      "name": "Get Current User",
+      "url": "{{ _.base_url }}/auth/me",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {},
+      "description": "Get current authenticated user information"
+    },
+    {
+      "_id": "req_logout",
+      "_type": "request",
+      "name": "Logout User",
+      "url": "{{ _.base_url }}/auth/logout", 
+      "method": "POST",
+      "headers": [],
+      "body": {},
+      "description": "Logout user and clear authentication cookies"
+    },
+    {
+      "_id": "req_search",
+      "_type": "request",
+      "name": "Search Products (Stub)",
+      "url": "{{ _.base_url }}/v1/search",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"query\": \"gaming laptop under 1500\",\n  \"max_results\": 10,\n  \"price_min\": 800.0,\n  \"price_max\": 1500.0,\n  \"categories\": [\"electronics\", \"computers\"]\n}"
+      },
+      "description": "Search for products (currently returns stub response)"
+    },
+    {
+      "_id": "req_rss_list_feeds",
+      "_type": "request",
+      "name": "RSS - List Feeds",
+      "url": "{{ _.base_url }}/v1/rss/feeds",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {},
+      "description": "List registered RSS feeds (optionally filter by status)"
+    },
+    {
+      "_id": "req_rss_create_feed",
+      "_type": "request",
+      "name": "RSS - Create Feed",
+      "url": "{{ _.base_url }}/v1/rss/feeds",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \n  \"name\": \"Example Feed\",\n  \"url\": \"https://example.com/rss\",\n  \"categories\": [\"electronics\"],\n  \"tags\": [\"deals\", \"flash\"],\n  \"poll_interval_minutes\": 15\n}\n"
+      },
+      "description": "Register a new RSS feed for ingestion"
+    },
+    {
+      "_id": "req_rss_update_feed",
+      "_type": "request",
+      "name": "RSS - Update Feed",
+      "url": "{{ _.base_url }}/v1/rss/feeds/{{ _.rss_feed_id }}",
+      "method": "PATCH",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"poll_interval_minutes\": 30,\n  \"status\": \"active\"\n}\n"
+      },
+      "description": "Update feed metadata (interval, status, etc.)"
+    },
+    {
+      "_id": "req_rss_delete_feed",
+      "_type": "request",
+      "name": "RSS - Delete Feed",
+      "url": "{{ _.base_url }}/v1/rss/feeds/{{ _.rss_feed_id }}",
+      "method": "DELETE",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {},
+      "description": "Delete an RSS feed by ID"
+    },
+    {
+      "_id": "env_smartshopper",
+      "_type": "environment",
+      "name": "SmartShopper Local",
+      "data": {
+        "base_url": "http://localhost:8000",
+        "access_token": "REPLACE_WITH_ACTUAL_TOKEN",
+        "rss_feed_id": "REPLACE_WITH_FEED_ID"
+      },
+      "color": "#00ff00"
+    },
+    {
+      "_id": "workspace_smartshopper", 
+      "_type": "workspace",
+      "name": "SmartShopper API",
+      "description": "API collection for SmartShopper product search platform"
+    }
+  ]
+}

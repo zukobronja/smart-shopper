@@ -1,0 +1,73 @@
+version: '3.8'
+
+# Local development with MongoDB Atlas + optional local MongoDB for offline work
+services:
+  # Main development service (uses Atlas by default)
+  smartshopper-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-runner
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - MONGODB_URL=${MONGODB_URL}  # Atlas connection
+      - DATABASE_NAME=${DATABASE_NAME:-smartshopper}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-change-in-production}
+      - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER:-minilm}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-console}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:8000/auth/google/callback}
+      - CORS_ORIGINS=["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
+    volumes:
+      # Mount source code for hot reloading
+      - ./backend:/app/backend
+      - ./frontend/dist:/app/backend/app/static
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    networks:
+      - smartshopper-network
+
+  # Optional: Local MongoDB for offline development
+  # Uncomment and use MONGODB_URL=mongodb://mongo-local:27017 in .env.local
+  mongo-local:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: smartshopper
+    volumes:
+      - mongo-local-data:/data/db
+      - ./scripts/mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - smartshopper-network
+    profiles:
+      - local-mongo  # Only start with: docker-compose --profile local-mongo up
+
+  # Optional: Frontend development server for separate frontend/backend dev
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - smartshopper-network
+    profiles:
+      - frontend-dev  # Only start with: docker-compose --profile frontend-dev up
+
+volumes:
+  mongo-local-data:
+
+networks:
+  smartshopper-network:
+    driver: bridge

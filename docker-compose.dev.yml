@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Development setup with hot reloading
+  smartshopper-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-runner
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - MONGODB_URL=${MONGODB_URL}
+      - DATABASE_NAME=${DATABASE_NAME:-smartshopper}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-change-in-production}
+      - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER:-openai}
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-console}
+      - CORS_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
+    volumes:
+      # Mount source code for development (hot reloading)
+      - ./backend:/app/backend
+      - ./frontend/dist:/app/backend/app/static
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Use MongoDB Atlas - no local dependency needed
+    # depends_on:
+    #   - mongo-dev
+    networks:
+      - smartshopper-network
+
+  # Local MongoDB for development (commented out - using Atlas instead)
+  # Uncomment if you want to develop with local MongoDB
+  # mongo-dev:
+  #   image: mongo:7.0
+  #   ports:
+  #     - "27017:27017"
+  #   environment:
+  #     MONGO_INITDB_DATABASE: smartshopper
+  #   volumes:
+  #     - mongo-data:/data/db
+  #   networks:
+  #     - smartshopper-network
+
+  # Frontend development server (optional - for separate dev)
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - smartshopper-network
+
+volumes:
+  mongo-data:
+
+networks:
+  smartshopper-network:
+    driver: bridge

@@ -1,0 +1,43 @@
+{
+  "indexes_to_create_in_atlas_console": [
+    {
+      "name": "rss_summary_minilm_idx",
+      "database": "smartshopper",
+      "collection": "rss_items",
+      "definition": {
+        "fields": [
+          {
+            "type": "vector",
+            "path": "summary_vec_minilm_384",
+            "numDimensions": 384,
+            "similarity": "cosine"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rss_summary_openai_idx", 
+      "database": "smartshopper",
+      "collection": "rss_items",
+      "definition": {
+        "fields": [
+          {
+            "type": "vector",
+            "path": "summary_vec_openai_1536",
+            "numDimensions": 1536,
+            "similarity": "cosine"
+          }
+        ]
+      }
+    }
+  ],
+  "instructions": [
+    "1. Go to Atlas Dashboard → Your Cluster → Search tab",
+    "2. Click 'Create Search Index'",
+    "3. Choose 'JSON Editor'", 
+    "4. Select database: 'smartshopper', collection: 'rss_items'",
+    "5. Paste the definition for each index above",
+    "6. Create both indexes",
+    "7. Wait for them to become 'Active' status"
+  ]
+}
