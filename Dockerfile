@@ -63,8 +63,8 @@ activate = 1' > /etc/ssl/aws_openssl.cnf
 
 WORKDIR /app
 
-# CACHE BUSTER - Force fresh build
-ARG CACHEBUST=1
+# CACHE BUSTER - Force fresh build with timestamp
+ARG CACHEBUST=20250924_2130
 
 # Install production-only Python dependencies (NO PyTorch/NVIDIA packages)
 # EXPLICITLY exclude torch, transformers, sentence-transformers
