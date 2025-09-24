@@ -25,17 +25,21 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend \
     PORT=8000 \
     EMBEDDINGS_PROVIDER=openai \
-    PYTHONHTTPSVERIFY=1 
-    # SSL_CERT_DIR=/etc/ssl/certs \
-    # REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    PYTHONHTTPSVERIFY=1 \
+    SSL_CERT_DIR=/etc/ssl/certs \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
-# Install only essential system dependencies including SSL certificates
+# Install essential system dependencies with enhanced SSL support
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
+    openssl \
+    ca-certificates-java \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
-    && update-ca-certificates
+    && update-ca-certificates \
+    && c_rehash /etc/ssl/certs/
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
@@ -49,6 +53,9 @@ ARG CACHEBUST=1
 # EXPLICITLY exclude torch, transformers, sentence-transformers
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
+    # Add explicit SSL support for Python
+    "certifi>=2023.11.17" \
+    "urllib3>=1.26.0" \
     # FastAPI Core
     "fastapi>=0.109.1" \
     "uvicorn[standard]>=0.27.0" \

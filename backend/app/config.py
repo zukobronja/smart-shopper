@@ -110,10 +110,10 @@ class Settings(BaseSettings):
     
     @property 
     def mongodb_url(self) -> str:
-        """Build MongoDB connection string"""
+        """Build MongoDB connection string with explicit SSL parameters"""
         if self.MONGO_USER and self.MONGO_PASS:
-            # Atlas format: mongodb+srv://user:pass@cluster/
-            return f"mongodb+srv://{self.MONGO_USER}:{self.MONGO_PASS}@{self.MONGO_CLUSTER_URL}/"
+            # Atlas format with SSL parameters for AWS compatibility
+            return f"mongodb+srv://{self.MONGO_USER}:{self.MONGO_PASS}@{self.MONGO_CLUSTER_URL}/?retryWrites=true&w=majority&ssl=true&authSource=admin&tlsAllowInvalidHostnames=false&tlsAllowInvalidCertificates=false"
         else:
             # Local format: mongodb://localhost:27017/
             return f"mongodb://{self.MONGO_CLUSTER_URL}/"
