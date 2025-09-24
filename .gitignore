@@ -151,3 +151,8 @@ secrets/
 *.crt
 *.p12
 .secrets
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
