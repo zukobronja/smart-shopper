@@ -41,10 +41,10 @@ def create_aws_compatible_ssl_context():
         # Disable certificate revocation checks
         ssl_context.check_hostname = False
         
-        logger.info("✅ Created AWS EB compatible SSL context")
+        logger.info("Created AWS EB compatible SSL context")
         return ssl_context
     except Exception as e:
-        logger.warning(f"⚠️ Failed to create custom SSL context: {e}")
+        logger.warning(f"Failed to create custom SSL context: {e}")
         return None
 
 async def connect_to_mongo():
@@ -62,7 +62,7 @@ async def connect_to_mongo():
     logger.info(f"Environment detection - ENVIRONMENT: {os.getenv('ENVIRONMENT')}, AWS EB detected: {is_aws_eb}")
     
     if is_aws_eb:
-        logger.info("🚨 AWS EB environment detected - using maximum SSL compatibility mode")
+        logger.info("AWS EB environment detected - using maximum SSL compatibility mode")
         
     connection_attempts = [
         # Attempt 1: AWS EB compatible - completely bypass SSL verification
@@ -74,7 +74,6 @@ async def connect_to_mongo():
                 "tlsAllowInvalidCertificates": True,
                 "tlsAllowInvalidHostnames": True,
                 "tlsDisableOCSPEndpointCheck": True,
-                "tlsDisableCertificateRevocationCheck": True,
                 "serverSelectionTimeoutMS": 45000,
                 "socketTimeoutMS": 45000,
                 "connectTimeoutMS": 45000,
@@ -83,12 +82,12 @@ async def connect_to_mongo():
                 "retryReads": True
             }
         },
-        # Attempt 2: AWS EB with custom SSL context and extended timeouts
+        # Attempt 2: AWS EB with basic SSL bypass
         {
-            "name": "AWS EB Extended SSL Context",
+            "name": "AWS EB Basic SSL Bypass",
             "params": {
                 "tls": True,
-                "ssl_context": create_aws_compatible_ssl_context(),
+                "tlsAllowInvalidCertificates": True,
                 "tlsAllowInvalidHostnames": True,
                 "serverSelectionTimeoutMS": 60000,
                 "socketTimeoutMS": 60000,
@@ -97,27 +96,39 @@ async def connect_to_mongo():
                 "retryReads": True
             }
         },
-        # Attempt 3: Minimal SSL
+        # Attempt 3: Standard SSL with longer timeouts
         {
-            "name": "Minimal SSL",
+            "name": "Standard SSL Extended Timeouts",
             "params": {
                 "tls": True,
-                "serverSelectionTimeoutMS": 30000,
-                "socketTimeoutMS": 30000,
-                "connectTimeoutMS": 30000,
+                "serverSelectionTimeoutMS": 90000,
+                "socketTimeoutMS": 90000,
+                "connectTimeoutMS": 90000,
                 "retryWrites": True
             }
         },
-        # Attempt 4: No SSL (fallback for development)
+        # Attempt 4: Try regular mongodb:// instead of mongodb+srv://
         {
-            "name": "No SSL (Development Only)",
+            "name": "Regular MongoDB Protocol",
             "params": {
-                "tls": False,
-                "serverSelectionTimeoutMS": 30000,
-                "socketTimeoutMS": 30000,
-                "connectTimeoutMS": 30000,
+                "tls": True,
+                "tlsAllowInvalidCertificates": True,
+                "serverSelectionTimeoutMS": 45000,
+                "socketTimeoutMS": 45000,
+                "connectTimeoutMS": 45000,
                 "retryWrites": True
-            }
+            },
+            "custom_url": True  # This will modify the URL
+        },
+        # Attempt 5: Connection string with SSL parameters inline
+        {
+            "name": "Inline SSL Parameters",
+            "params": {
+                "serverSelectionTimeoutMS": 45000,
+                "socketTimeoutMS": 45000,
+                "connectTimeoutMS": 45000
+            },
+            "inline_ssl_url": True  # This will add SSL params to URL
         }
     ]
     
@@ -135,25 +146,47 @@ async def connect_to_mongo():
             if mongo_client.client:
                 await mongo_client.client.close()
             
+            # Determine connection URL
+            connection_url = settings.mongodb_url
+            if attempt.get('custom_url') and 'mongodb+srv://' in connection_url:
+                # Convert mongodb+srv to regular mongodb for this attempt
+                connection_url = connection_url.replace('mongodb+srv://', 'mongodb://')
+                connection_url = connection_url.replace(':27017', '')  # Remove port from SRV
+                if ':27017' not in connection_url:
+                    connection_url = connection_url.replace('@', ':27017/@')  # Add default port
+                logger.info(f"Using custom URL format: mongodb://...")
+            elif attempt.get('inline_ssl_url'):
+                # Add SSL parameters directly to the URL
+                ssl_params = "&tls=true&tlsAllowInvalidCertificates=true&tlsAllowInvalidHostnames=true&tlsInsecure=true"
+                if '?' in connection_url:
+                    connection_url += ssl_params
+                else:
+                    connection_url += '?' + ssl_params[1:]  # Remove first &
+                logger.info(f"Using inline SSL parameters in URL")
+            
             # Create new connection
+            params = attempt['params'].copy()
+            params.pop('custom_url', None)  # Remove non-MongoDB parameters
+            params.pop('inline_ssl_url', None)
+            
             mongo_client.client = AsyncMongoClient(
-                settings.mongodb_url,
-                **attempt['params']
+                connection_url,
+                **params
             )
             mongo_client.database = mongo_client.client[settings.DATABASE_NAME]
             
             # Test connection
             await mongo_client.client.admin.command('ping')
-            logger.info(f"🎉✅ Successfully connected to MongoDB using: {attempt['name']}")
+            logger.info(f"Successfully connected to MongoDB using: {attempt['name']}")
             break
             
         except Exception as e:
-            logger.warning(f"❌ Connection attempt {i} failed ({attempt['name']}): {str(e)[:200]}...")
+            logger.warning(f"Connection attempt {i} failed ({attempt['name']}): {str(e)[:200]}...")
             last_error = e
             
             # Add specific handling for SSL errors
             if "SSL" in str(e) or "TLS" in str(e):
-                logger.error(f"🔒 SSL/TLS Error detected in attempt {i}. This is common in AWS EB environments.")
+                logger.error(f"SSL/TLS Error detected in attempt {i}. This is common in AWS EB environments.")
             
             continue
     else:
