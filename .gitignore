@@ -152,6 +152,12 @@ secrets/
 *.p12
 .secrets
 
+
+# Code Analysis
+CLAUDE.md
+
+# Design documents
+docs
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
