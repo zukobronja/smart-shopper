@@ -1,0 +1,24 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Ports": [
+    {
+      "ContainerPort": "8000",
+      "HostPort": "80"
+    }
+  ],
+  "Environment": [
+    {
+      "Name": "EMBEDDINGS_PROVIDER",
+      "Value": "openai"
+    },
+    {
+      "Name": "ENVIRONMENT",
+      "Value": "production"
+    },
+    {
+      "Name": "ENABLE_RSS_INGESTION",
+      "Value": "true"
+    }
+  ],
+  "Logging": "/var/log/eb-docker/containers/eb-current-app"
+}

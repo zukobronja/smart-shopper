@@ -25,7 +25,15 @@ from collections import defaultdict
 from app.agents.state import SmartShopperAgent, SmartShopperWorkflowState, add_agent_step
 from app.config import settings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from sentence_transformers import SentenceTransformer
+
+# Conditional import - only import sentence_transformers if needed
+try:
+    if settings.EMBEDDINGS_PROVIDER == "minilm":
+        from sentence_transformers import SentenceTransformer
+    else:
+        SentenceTransformer = None
+except ImportError:
+    SentenceTransformer = None
 
 
 class SemanticRelevanceScorer:
@@ -44,8 +52,8 @@ class SemanticRelevanceScorer:
                     api_key=settings.OPENAI_API_KEY,
                     model="text-embedding-3-small"
                 )
-            else:
-                # Default to MiniLM for fast local embeddings
+            elif SentenceTransformer is not None:
+                # Only initialize if sentence_transformers is available
                 self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
         except Exception as e:
             print(f"Warning: Could not initialize embeddings: {e}")
