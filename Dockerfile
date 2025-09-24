@@ -24,13 +24,18 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/backend \
     PORT=8000 \
-    EMBEDDINGS_PROVIDER=openai
+    EMBEDDINGS_PROVIDER=openai \
+    PYTHONHTTPSVERIFY=1 \
+    SSL_CERT_DIR=/etc/ssl/certs \
+    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
-# Install only essential system dependencies
+# Install only essential system dependencies including SSL certificates
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && apt-get clean \
+    && update-ca-certificates
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
