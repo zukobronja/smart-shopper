@@ -17,6 +17,7 @@ COPY frontend/ ./
 
 # Set production API URL for EB deployment (hardcoded for now)
 ENV VITE_API_BASE_URL=http://smartshopper-env1.eba-dqyremt4.eu-central-1.elasticbeanstalk.com
+# ENV VITE_API_BASE_URL=http://localhost:8000
 RUN echo "Building frontend with VITE_API_BASE_URL=${VITE_API_BASE_URL}" && npm run build
 
 # Stage 2: Production Backend - Lightweight Python Runtime
