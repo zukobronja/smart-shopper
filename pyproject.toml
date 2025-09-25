@@ -20,9 +20,13 @@ dependencies = [
     "python-multipart>=0.0.6",
     # AI/ML
     "openai>=1.12.0",
-    "sentence-transformers>=2.2.2",
-    "torch>=2.1.0",
+    # Heavy ML dependencies - commented out for AWS deployment
+    # "sentence-transformers>=2.2.2",
+    # "torch>=2.1.0",
     "numpy>=1.24.0",
+    # SSL/TLS support for AWS deployment
+    "certifi>=2024.0.0",
+    "dnspython>=2.6.1",
     # Tavily
     "tavily-python>=0.7.6",
     # LangChain/LangGraph

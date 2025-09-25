@@ -19,47 +19,25 @@ RUN npm run build
 # Stage 2: Production Backend - Lightweight Python Runtime
 FROM python:3.12-slim AS production
 
-# Environment variables with AWS EB SSL compatibility
+# Environment variables (simplified like working demo)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/backend \
     PORT=8000 \
     EMBEDDINGS_PROVIDER=openai \
-    PYTHONHTTPSVERIFY=1 \
-    SSL_CERT_DIR=/etc/ssl/certs \
-    REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
-    OPENSSL_CONF=/etc/ssl/openssl.cnf
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-# Install essential system dependencies with enhanced SSL support for AWS EB
+# Install essential system dependencies (simplified SSL approach like working demo)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-    openssl \
-    ca-certificates-java \
-    libssl-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean \
-    && update-ca-certificates \
-    && c_rehash /etc/ssl/certs/ \
-    && openssl version
+    && update-ca-certificates
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Create AWS EB compatible OpenSSL configuration
-RUN echo '[openssl_init]\n\
-providers = provider_sect\n\
-\n\
-[provider_sect]\n\
-default = default_sect\n\
-legacy = legacy_sect\n\
-\n\
-[default_sect]\n\
-activate = 1\n\
-\n\
-[legacy_sect]\n\
-activate = 1' > /etc/ssl/aws_openssl.cnf
+# Remove complex OpenSSL configuration - use system defaults
 
 WORKDIR /app
 
@@ -70,10 +48,9 @@ ARG CACHEBUST=20250924_2130
 # EXPLICITLY exclude torch, transformers, sentence-transformers
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
-    # Add explicit SSL support for Python and MongoDB
-    "certifi>=2023.11.17" \
-    "urllib3>=1.26.0" \
-    "pyOpenSSL>=23.0.0" \
+    # SSL support for Python and MongoDB (simplified like working demo)
+    "certifi>=2024.0.0" \
+    "dnspython>=2.6.1" \
     # FastAPI Core
     "fastapi>=0.109.1" \
     "uvicorn[standard]>=0.27.0" \
