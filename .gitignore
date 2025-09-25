@@ -163,3 +163,17 @@ docs
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+# Ignore specific config file (contains environment-specific data)
+.elasticbeanstalk/config.yml
+
+# Environment Configuration (contains sensitive data)
+.ebextensions/environment.config
+
+# Docker Configuration (contains sensitive data)
+Dockerfile
+
+# UV lock file (Python dependency management)
+uv.lock
+
+# Cookies file (contains session data)
+cookies.txt

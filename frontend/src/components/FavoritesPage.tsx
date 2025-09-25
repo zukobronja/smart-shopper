@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Bell, ExternalLink, Pencil, Trash2, X } from 'lucide-react';
 import { useFavorites, useFavoriteTags } from '../hooks/useFavorites';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import type { FavoriteProduct } from '../types/favorites';
+import { fetchSearchRun } from '../services/search';
+import type { SearchResponse } from '../types/search';
 
 interface FavoriteCardProps {
   favorite: FavoriteProduct;
@@ -15,6 +18,9 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, onUpdate, onRemov
   const [tags, setTags] = useState(favorite.tags.join(', '));
   const [priceAlert, setPriceAlert] = useState(favorite.price_alert_enabled);
   const [priceThreshold, setPriceThreshold] = useState(favorite.price_alert_threshold?.toString() || '');
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(favorite.url ?? null);
+  const [resolvingError, setResolvingError] = useState<string | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
 
   const handleSave = async () => {
     const success = await onUpdate(favorite.id, {
@@ -37,6 +43,66 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, onUpdate, onRemov
     setIsEditing(false);
   };
 
+  useEffect(() => {
+    let ignore = false;
+
+    const resolveSourceLink = async () => {
+      if (favorite.url) {
+        setResolvedUrl(favorite.url);
+        setResolvingError(null);
+        return;
+      }
+
+      if (!favorite.search_run_id) {
+        setResolvedUrl(null);
+        return;
+      }
+
+      setIsResolving(true);
+      setResolvingError(null);
+
+      try {
+        const run: SearchResponse = await fetchSearchRun(favorite.search_run_id);
+        if (ignore) {
+          return;
+        }
+        const normalizedTitle = favorite.title?.trim().toLowerCase();
+        const matched = run.results.find((result) =>
+          result.title?.trim().toLowerCase() === normalizedTitle
+        );
+        const fallback = run.results[0];
+        const resolved = matched?.url ?? fallback?.url ?? null;
+        setResolvedUrl(resolved);
+        setResolvingError(resolved ? null : 'Source unavailable');
+      } catch (error) {
+        if (!ignore) {
+          setResolvingError(error instanceof Error ? error.message : 'Failed to resolve source');
+          setResolvedUrl(null);
+        }
+      } finally {
+        if (!ignore) {
+          setIsResolving(false);
+        }
+      }
+    };
+
+    resolveSourceLink();
+
+    return () => {
+      ignore = true;
+    };
+  }, [favorite.url, favorite.search_run_id, favorite.title]);
+
+  const sourceButtonLabel = useMemo(() => {
+    if (isResolving) {
+      return 'Resolving…';
+    }
+    if (resolvedUrl) {
+      return 'View Source';
+    }
+    return 'Source unavailable';
+  }, [isResolving, resolvedUrl]);
+
   return (
     <div className="glass-card favorite-card">
       <div className="favorite-card-header">
@@ -49,15 +115,17 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, onUpdate, onRemov
             onClick={() => setIsEditing(!isEditing)}
             className="action-button edit-button"
             title="Edit favorite"
+            aria-label="Edit favorite"
           >
-            ✏️
+            <Pencil className="icon" aria-hidden="true" />
           </button>
           <button
             onClick={() => onRemove(favorite.id)}
             className="action-button remove-button"
             title="Remove from favorites"
+            aria-label="Remove from favorites"
           >
-            🗑️
+            <Trash2 className="icon" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -71,18 +139,29 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, onUpdate, onRemov
           </div>
         )}
 
-        {favorite.url && (
-          <div className="favorite-link">
+        <div className="favorite-link">
+          {resolvedUrl ? (
             <a
-              href={favorite.url}
+              href={resolvedUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="glass-button"
+              className="glass-button link-button"
             >
-              View Product
+              <ExternalLink className="icon" aria-hidden="true" />
+              <span>View Source</span>
             </a>
-          </div>
-        )}
+          ) : (
+            <button
+              type="button"
+              className="glass-button link-button"
+              disabled
+              title={resolvingError ?? 'Source unavailable'}
+            >
+              <ExternalLink className="icon" aria-hidden="true" />
+              <span>{sourceButtonLabel}</span>
+            </button>
+          )}
+        </div>
 
         {favorite.tags.length > 0 && (
           <div className="favorite-tags">
@@ -102,8 +181,8 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, onUpdate, onRemov
 
         {favorite.price_alert_enabled && (
           <div className="price-alert-info">
-            <span className="alert-indicator">🔔</span>
-            Price alert: {favorite.currency} {favorite.price_alert_threshold}
+            <Bell className="icon" aria-hidden="true" />
+            <span>Price alert: {favorite.currency} {favorite.price_alert_threshold}</span>
           </div>
         )}
       </div>
@@ -209,8 +288,8 @@ export const FavoritesPage: React.FC<{ onClose: () => void }> = ({ onClose }) =>
       <div className="favorites-page">
         <div className="favorites-header">
           <h2>Favorites</h2>
-          <button onClick={onClose} className="close-button">
-            ✕
+          <button onClick={onClose} className="close-button" aria-label="Close favorites">
+            <X className="icon" aria-hidden="true" />
           </button>
         </div>
         <div className="auth-required">
@@ -224,8 +303,8 @@ export const FavoritesPage: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     <div className="favorites-page">
       <div className="favorites-header">
         <h2>My Favorites ({favorites.length})</h2>
-        <button onClick={onClose} className="close-button">
-          ✕
+        <button onClick={onClose} className="close-button" aria-label="Close favorites">
+          <X className="icon" aria-hidden="true" />
         </button>
       </div>
 

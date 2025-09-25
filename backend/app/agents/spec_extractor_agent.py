@@ -16,7 +16,7 @@ Architecture Position: CredibilityFilter → SpecExtractor → ResultsRanker
 import re
 import json
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from app.agents.state import SmartShopperAgent, SmartShopperWorkflowState, add_agent_step
 from app.config import settings
@@ -557,7 +557,7 @@ class SpecExtractorAgent(SmartShopperAgent):
             except Exception as e:
                 self.log(f"LLM enhancement failed: {e}")
         
-        # 7. Create final product specification
+        # 7. Create final product specification  
         product_spec = {
             "title": basic_info.get("title", ""),
             "brand": basic_info.get("brand"),
@@ -566,10 +566,15 @@ class SpecExtractorAgent(SmartShopperAgent):
             "availability": basic_info.get("availability"),
             "category": category,
             "specs": specs,
-            "source_url": url,
+            "url": url,  # Primary URL field for user navigation
+            "source_url": url,  # Keep for backward compatibility
+            "domain": basic_info.get("domain", ""),  # Add domain field
             "extraction_coverage": coverage,
             "extraction_method": extraction_method,
-            "images": basic_info.get("images", [])
+            "images": basic_info.get("images", []),
+            # Preserve credibility data from credibility filter
+            "credibility_score": result.get("credibility_score", 0.0),
+            "credibility_breakdown": result.get("credibility_breakdown", {})
         }
         
         return product_spec
@@ -578,6 +583,16 @@ class SpecExtractorAgent(SmartShopperAgent):
         """Extract basic product information from result"""
         title = result.get("title", "").strip()
         content = result.get("content", "")
+        url = result.get("url", "")
+        
+        # Extract domain from URL
+        domain = ""
+        if url:
+            from urllib.parse import urlparse
+            try:
+                domain = urlparse(url).netloc
+            except Exception:
+                domain = ""
         
         # Extract brand from title (first word often is brand)
         brand = None
@@ -590,9 +605,15 @@ class SpecExtractorAgent(SmartShopperAgent):
         # Extract price information
         price_info = self._extract_price_info(content)
         
+        # If no price found and we have a URL, try title-based extraction as fallback
+        if not price_info and title:
+            price_info = self._extract_price_from_title_context(title, content)
+        
         basic_info = {
             "title": title,
             "brand": brand,
+            "url": url,  # Preserve original URL
+            "domain": domain,  # Extract domain for credibility scoring
             "images": []  # Could be extracted from content if needed
         }
         
@@ -603,50 +624,272 @@ class SpecExtractorAgent(SmartShopperAgent):
         return basic_info
     
     def _extract_price_info(self, content: str) -> Dict[str, Any]:
-        """Extract price information from content"""
+        """
+        Enhanced price extraction using comprehensive currency patterns
+        Based on RSS price extraction patterns for better accuracy
+        """
         price_info = {}
         
-        # Price patterns
+        # Comprehensive currency-specific patterns (most specific first)
         price_patterns = [
-            r'\$(\d+,?\d*\.?\d*)',  # $99.99, $1,299
-            r'(\d+,?\d*\.?\d*)\s*(?:USD|dollars?)',  # 99.99 USD
-            r'€(\d+,?\d*\.?\d*)',  # €99.99
-            r'£(\d+,?\d*\.?\d*)',  # £99.99
+            # More specific currency symbols first (to avoid conflicts)
+            # CAD patterns (must come before USD $)
+            (r'C\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "CAD"),  # C$1,299.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*CAD', "CAD"),  # 1299.99 CAD
+            
+            # AUD patterns (must come before USD $)
+            (r'A\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "AUD"),  # A$1,299.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*AUD', "AUD"),  # 1299.99 AUD
+            
+            # USD patterns (generic $ symbol - comes after specific ones)
+            (r'\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "USD"),  # $1,299.99, $99.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*USD', "USD"),  # 1299.99 USD
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:dollars?)', "USD"),  # 99 dollars
+            
+            # EUR patterns
+            (r'€(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)', "EUR"),  # €1.299,99, €99,99
+            (r'(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)\s*EUR', "EUR"),  # 1299.99 EUR
+            (r'(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)\s*euros?', "EUR"),  # 99 euros
+            
+            # GBP patterns
+            (r'£(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "GBP"),  # £1,299.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*GBP', "GBP"),  # 1299.99 GBP
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*pounds?', "GBP"),  # 99 pounds
+            
+            # JPY patterns
+            (r'¥(\d{1,3}(?:,\d{3})*)', "JPY"),  # ¥99,999
+            (r'(\d{1,3}(?:,\d{3})*)\s*JPY', "JPY"),  # 99999 JPY
+            (r'(\d{1,3}(?:,\d{3})*)\s*yen', "JPY"),  # 99999 yen
+            
+            # INR patterns
+            (r'₹(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)', "INR"),  # ₹99,999.99
+            (r'(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)\s*INR', "INR"),  # 99,999.99 INR
+            (r'Rs\.?\s*(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)', "INR"),  # Rs. 99,999.99
+            
+            # Generic currency patterns (lower priority)
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:currency|price)', "USD"),  # fallback
         ]
         
-        for pattern in price_patterns:
-            match = re.search(pattern, content, re.IGNORECASE)
-            if match:
-                price_str = match.group(1).replace(',', '')
+        # Enhanced price extraction: Find ALL price matches and choose the best one
+        all_price_candidates = []
+        
+        for pattern, currency in price_patterns:
+            matches = re.finditer(pattern, content, re.IGNORECASE)
+            for match in matches:
+                price_str = match.group(1).replace(' ', '')  # Remove spaces
+                
                 try:
+                    # Handle European decimal format properly
+                    if '.' in price_str and ',' in price_str:
+                        # Check which separator is used as decimal
+                        dot_pos = price_str.rfind('.')
+                        comma_pos = price_str.rfind(',')
+                        
+                        if dot_pos < comma_pos:
+                            # European format: 1.299,99 -> 1299.99
+                            price_str = price_str.replace('.', '').replace(',', '.')
+                        else:
+                            # US format: 1,299.99 -> 1299.99
+                            price_str = price_str.replace(',', '')
+                    elif ',' in price_str:
+                        # Check if comma is decimal separator (European) or thousands separator
+                        parts = price_str.split(',')
+                        if len(parts[-1]) == 2:  # Likely decimal: 1299,99
+                            price_str = price_str.replace(',', '.')
+                        else:  # Likely thousands separator: 1,299
+                            price_str = price_str.replace(',', '')
+                    
                     price = float(price_str)
-                    price_info["price"] = price
                     
-                    # Determine currency
-                    if '$' in match.group(0) or 'USD' in match.group(0).upper():
-                        price_info["currency"] = "USD"
-                    elif '€' in match.group(0):
-                        price_info["currency"] = "EUR"
-                    elif '£' in match.group(0):
-                        price_info["currency"] = "GBP"
-                    else:
-                        price_info["currency"] = "USD"  # Default
-                    
-                    break
-                except ValueError:
+                    # Validate price range (avoid extracting years, IDs, etc.)
+                    if 0.01 <= price <= 1000000:  # Reasonable price range
+                        # Get context around the price for intelligent selection
+                        start_pos = max(0, match.start() - 100)
+                        end_pos = min(len(content), match.end() + 100)
+                        context = content[start_pos:end_pos].lower()
+                        
+                        all_price_candidates.append({
+                            'price': price,
+                            'currency': currency,
+                            'context': context,
+                            'full_match': match.group(0),
+                            'position': match.start()
+                        })
+                        
+                except (ValueError, AttributeError):
                     continue
         
-        # Availability patterns
+        # If we have multiple price candidates, choose the best one
+        if all_price_candidates:
+            best_price = self._select_best_price_candidate(all_price_candidates)
+            if best_price:
+                price_info["price"] = best_price['price']
+                price_info["currency"] = best_price['currency']
+        
+        # Enhanced availability patterns
         availability_patterns = [
-            r"(in stock|out of stock|available|unavailable|backordered|pre-?order)",
+            r"(in stock|out of stock|available|unavailable|sold out|backordered|back-?ordered)",
+            r"(pre-?order|pre-?sale|coming soon|temporarily unavailable)",
             r"ships? (?:in|within)\s+(\d+)\s*(days?|weeks?|months?)",
+            r"(limited availability|limited stock|only \d+ left)",
+            r"(add to cart|buy now|purchase|order now)",  # Positive availability indicators
         ]
         
         for pattern in availability_patterns:
             match = re.search(pattern, content, re.IGNORECASE)
             if match:
-                price_info["availability"] = match.group(0).strip()
+                availability_text = match.group(0).strip().lower()
+                
+                # Normalize availability status
+                if any(term in availability_text for term in ["in stock", "available", "add to cart", "buy now", "purchase", "order now"]):
+                    price_info["availability"] = "in_stock"
+                elif any(term in availability_text for term in ["out of stock", "sold out", "unavailable"]):
+                    price_info["availability"] = "out_of_stock"
+                elif any(term in availability_text for term in ["backorder", "back-order"]):
+                    price_info["availability"] = "backordered"
+                elif any(term in availability_text for term in ["pre-order", "pre-sale", "coming soon"]):
+                    price_info["availability"] = "pre_order"
+                elif "limited" in availability_text:
+                    price_info["availability"] = "limited_stock"
+                elif "ships" in availability_text or "days" in availability_text or "weeks" in availability_text:
+                    price_info["availability"] = f"ships_{match.group(0).strip()}"
+                else:
+                    price_info["availability"] = availability_text
                 break
+        
+        return price_info
+    
+    def _select_best_price_candidate(self, candidates: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Intelligently select the best price candidate from multiple matches.
+        Prioritizes main product price over accessories, services, and related items.
+        """
+        if not candidates:
+            return None
+        
+        if len(candidates) == 1:
+            return candidates[0]
+        
+        # Score each candidate based on context
+        scored_candidates = []
+        
+        for candidate in candidates:
+            score = 0
+            context = candidate['context']
+            price = candidate['price']
+            
+            # POSITIVE indicators (main product price)
+            positive_indicators = [
+                ('price', 10),  # Direct price mention
+                ('buy', 8),     # Buy now, purchase
+                ('add to cart', 8),
+                ('our price', 8),
+                ('sale price', 8),
+                ('you save', 5),
+                ('instant savings', 5),
+                ('special', 3),
+                ('offer', 3)
+            ]
+            
+            # NEGATIVE indicators (not main price)
+            negative_indicators = [
+                ('protection plan', -15),  # Extended warranties
+                ('warranty', -10),
+                ('service', -10),
+                ('plan', -8),
+                ('add a', -8),           # "Add a protection plan"
+                ('accessories', -10),
+                ('related', -8),
+                ('also available', -5),
+                ('shipping', -12),       # Shipping costs
+                ('tax', -10),           # Tax amounts
+                ('deposit', -8),        # Security deposits
+                ('monthly', -12),       # Monthly payments
+                ('financing', -10),     # Financing amounts
+                ('/mo', -12),           # Per month
+                ('per month', -12),
+                ('credit', -8),         # Credit card offers
+                ('cashback', -5),       # Cashback amounts
+                ('rebate', -5),         # Rebate amounts
+            ]
+            
+            # Apply positive scoring
+            for indicator, points in positive_indicators:
+                if indicator in context:
+                    score += points
+            
+            # Apply negative scoring  
+            for indicator, points in negative_indicators:
+                if indicator in context:
+                    score += points  # points are already negative
+            
+            # Enhanced price range scoring (higher prices more likely to be main product for electronics)
+            if price >= 3000:    # Premium product price (gaming laptops, high-end electronics)
+                score += 25
+            elif price >= 2000:  # High-end product price
+                score += 20
+            elif price >= 1000:  # Mid-to-high range product price
+                score += 15
+            elif price >= 500:   # Mid-range product price
+                score += 10
+            elif price >= 100:   # Low-end product or accessory
+                score += 0  # Neutral
+            elif price < 100:    # Very likely accessory/service price
+                score -= 10
+            elif price < 50:     # Almost certainly accessory/service price
+                score -= 15
+            
+            # Position scoring (earlier prices often more prominent)
+            if candidate['position'] < 1000:  # Early in content
+                score += 3
+            elif candidate['position'] < 5000:  # Middle of content
+                score += 1
+            
+            scored_candidates.append((score, candidate))
+        
+        # Sort by score (highest first) and return the best candidate
+        scored_candidates.sort(key=lambda x: x[0], reverse=True)
+        best_candidate = scored_candidates[0][1]
+        
+        # Debug logging for development
+        self.log(f"Price selection: Found {len(candidates)} candidates, chose ${best_candidate['price']:.2f} "
+                f"(score: {scored_candidates[0][0]}) over others")
+        
+        return best_candidate
+    
+    def _extract_price_from_title_context(self, title: str, content: str) -> Dict[str, Any]:
+        """
+        Fallback price extraction focusing on title context and high-confidence patterns
+        """
+        price_info = {}
+        
+        # Combine title and content for analysis
+        combined_text = f"{title} {content}"
+        
+        # High-confidence price patterns for fallback extraction
+        fallback_patterns = [
+            (r'\b(?:price|cost|priced\s+at)[:$\s]*\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "USD"),
+            (r'\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:each|ea\.?|price)', "USD"),
+            (r'(?:starts\s+at|from|only)\s*\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "USD"),
+            # B&H Photo specific patterns
+            (r'our\s+price\s*\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "USD"),
+            (r'sale\s+price\s*\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "USD"),
+        ]
+        
+        for pattern, currency in fallback_patterns:
+            match = re.search(pattern, combined_text, re.IGNORECASE)
+            if match:
+                try:
+                    price_str = match.group(1).replace(',', '')
+                    price = float(price_str)
+                    
+                    # Apply reasonable bounds for electronics
+                    if 50 <= price <= 50000:
+                        price_info["price"] = price
+                        price_info["currency"] = currency
+                        break
+                except (ValueError, AttributeError):
+                    continue
         
         return price_info
     

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Heart, HeartOff, Loader2 } from 'lucide-react';
 import { useFavorites } from '../hooks/useFavorites';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import type { ProductResult } from '../types/search';
@@ -101,11 +102,11 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       aria-label={isCurrentlyFavorited ? 'Remove from favorites' : 'Add to favorites'}
     >
       {isProcessing ? (
-        <span className="processing-spinner">⟳</span>
+        <Loader2 className="icon icon-spinner" aria-hidden="true" />
+      ) : isCurrentlyFavorited ? (
+        <Heart className="icon icon-filled" aria-hidden="true" />
       ) : (
-        <span className="heart-icon">
-          {isCurrentlyFavorited ? '❤️' : '🤍'}
-        </span>
+        <HeartOff className="icon" aria-hidden="true" />
       )}
     </button>
   );

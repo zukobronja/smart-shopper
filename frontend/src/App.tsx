@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Heart } from "lucide-react";
 import "./App.css";
 import { searchProducts } from "./services/search";
 import { fetchGoogleAuthorizationUrl } from "./services/auth";
@@ -229,10 +230,9 @@ interface SearchHistoryItem {
   totalTimeMs: number;
   coverageScore: number;
   currency?: string;
-  budget?: number;
 }
 
-const HISTORY_STORAGE_KEY = "smartshopper_search_history_v1";
+const HISTORY_STORAGE_KEY = "smartshopper_search_history_v2";
 
 function Badge({ children, tone = "teal" }: { children: React.ReactNode; tone?: "teal" | "indigo" }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
@@ -325,7 +325,7 @@ function ResultCard({
         />
         {item.url ? (
           <a className="glass-button" href={item.url} target="_blank" rel="noreferrer">
-            Open source
+            View Source
           </a>
         ) : (
           <button className="glass-button" disabled>
@@ -340,7 +340,6 @@ function ResultCard({
 export default function App() {
   const [query, setQuery] = useState("");
   const [currency, setCurrency] = useState(getDefaultCurrency());
-  const [budget, setBudget] = useState(1200);
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ProductResult[]>([]);
@@ -368,6 +367,18 @@ export default function App() {
       if (stored) {
         const parsed = JSON.parse(stored) as SearchHistoryItem[];
         setHistory(parsed);
+        return;
+      }
+
+      const legacy = localStorage.getItem("smartshopper_search_history_v1");
+      if (legacy) {
+        const parsedLegacy = JSON.parse(legacy) as Array<
+          SearchHistoryItem & { budget?: number }
+        >;
+        const migrated = parsedLegacy.map(({ budget, ...rest }) => rest);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(migrated));
+        localStorage.removeItem("smartshopper_search_history_v1");
+        setHistory(migrated);
       }
     } catch (storageError) {
       console.warn("Failed to read search history", storageError);
@@ -465,16 +476,12 @@ export default function App() {
     const payload = {
       query: trimmedQuery,
       max_results: 10,
-      price_max: budget > 0 ? budget : undefined,
     };
 
     try {
       const response: SearchResponse = await searchProducts(payload, controller.signal);
       const filteredResults = (response.results || []).filter((product) => {
         if (currency && product.currency && product.currency !== currency) {
-          return false;
-        }
-        if (budget > 0 && product.price != null && product.price > budget) {
           return false;
         }
         return true;
@@ -491,7 +498,7 @@ export default function App() {
       const metrics = response.execution_metrics;
       setRunSummary({
         runId: response.run_id,
-        resultsCount: response.results_count,
+        resultsCount: filteredResults.length,
         totalTimeMs: metrics?.total_time_ms ?? 0,
         coverageScore: metrics?.coverage_score ?? 0,
         totalCostUsd: metrics?.total_cost_usd ?? 0,
@@ -505,7 +512,6 @@ export default function App() {
         totalTimeMs: metrics?.total_time_ms ?? 0,
         coverageScore: metrics?.coverage_score ?? 0,
         currency,
-        budget,
       };
 
       persistHistory((prev) => {
@@ -533,14 +539,8 @@ export default function App() {
 
   const handleQueryChange = (newQuery: string) => {
     setQuery(newQuery);
-    
-    // Detect price and currency from query
+
     const detection = detectPriceFromQuery(newQuery);
-    
-    // Auto-populate controls if price/currency detected
-    if (detection.amount !== null) {
-      setBudget(detection.amount);
-    }
     if (detection.currency !== null) {
       setCurrency(detection.currency);
     }
@@ -552,6 +552,9 @@ export default function App() {
   };
 
   const handleHistoryClick = (item: SearchHistoryItem) => {
+    if (item.currency) {
+      setCurrency(item.currency);
+    }
     handleQueryChange(item.query);
     executeSearch(item.query);
   };
@@ -609,34 +612,73 @@ export default function App() {
           </div>
         </div>
         <nav className="nav">
-          {currentUser ? (
-            <div className="nav-user">
-              <button 
-                type="button" 
-                className="glass-button nav-button" 
-                onClick={() => setShowFavoritesPage(true)}
-                title="View favorites"
+          <div className="nav-actions">
+            <div className="unified-price-control nav-currency-control">
+              <button
+                type="button"
+                className="price-display nav-currency-button"
+                onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                aria-haspopup="listbox"
+                aria-expanded={showCurrencyDropdown}
               >
-                🤍 Favorites
+                <span className="currency-symbol">{getCurrencySymbol(currency)}</span>
+                <span className="currency-code">{currency}</span>
+                <span className="dropdown-arrow">▼</span>
               </button>
-              <div className="nav-user-info">
-                <span className="nav-user-name">{currentUser.full_name || currentUser.email}</span>
-                <span className="nav-user-email">{currentUser.email}</span>
-              </div>
-              <button type="button" className="glass-button nav-button" onClick={handleLogout}>
-                Sign out
-              </button>
+              {showCurrencyDropdown && (
+                <div className="currency-dropdown nav-currency-dropdown">
+                  <div className="currency-list" role="listbox">
+                    {CURRENCIES.map((curr) => (
+                      <div
+                        key={curr.code}
+                        className={`currency-option ${currency === curr.code ? 'selected' : ''}`}
+                        onClick={() => {
+                          setCurrency(curr.code);
+                          setShowCurrencyDropdown(false);
+                        }}
+                        role="option"
+                        aria-selected={currency === curr.code}
+                      >
+                        <span className="currency-symbol">{curr.symbol}</span>
+                        <span className="currency-name">{curr.name}</span>
+                        <span className="currency-code">{curr.code}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <button
-              type="button"
-              className="glass-button nav-button"
-              onClick={openAuthPanel}
-              disabled={isCheckingAuth}
-            >
-              {isCheckingAuth ? "Checking…" : "Sign in"}
-            </button>
-          )}
+
+            {currentUser ? (
+              <div className="nav-user">
+                <button 
+                  type="button" 
+                  className="glass-button nav-button button-with-icon" 
+                  onClick={() => setShowFavoritesPage(true)}
+                  title="View favorites"
+                >
+                  <Heart className="icon icon-inline" aria-hidden="true" />
+                  <span>Favorites</span>
+                </button>
+                <div className="nav-user-info">
+                  <span className="nav-user-name">{currentUser.full_name || currentUser.email}</span>
+                  <span className="nav-user-email">{currentUser.email}</span>
+                </div>
+                <button type="button" className="glass-button nav-button" onClick={handleLogout}>
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="glass-button nav-button"
+                onClick={openAuthPanel}
+                disabled={isCheckingAuth}
+              >
+                {isCheckingAuth ? "Checking…" : "Sign in"}
+              </button>
+            )}
+          </div>
         </nav>
       </header>
 
@@ -664,55 +706,7 @@ export default function App() {
                   className="search-input"
                 />
               </div>
-              
-              {/* Unified Price/Currency Component */}
-              <div className="unified-price-control">
-                <div 
-                  className="price-display" 
-                  onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-                >
-                  <span className="price-amount">
-                    {getCurrencySymbol(currency)} {budget.toLocaleString()}
-                  </span>
-                  <span className="price-currency">{currency}</span>
-                  <span className="dropdown-arrow">▼</span>
-                </div>
-                
-                {showCurrencyDropdown && (
-                  <div className="currency-dropdown">
-                    <div className="currency-list">
-                      {CURRENCIES.map((curr) => (
-                        <div
-                          key={curr.code}
-                          className={`currency-option ${currency === curr.code ? 'selected' : ''}`}
-                          onClick={() => {
-                            setCurrency(curr.code);
-                            setShowCurrencyDropdown(false);
-                          }}
-                        >
-                          <span className="currency-symbol">{curr.symbol}</span>
-                          <span className="currency-name">{curr.name}</span>
-                          <span className="currency-code">{curr.code}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <input
-                  type="number"
-                  min={0}
-                  value={budget}
-                  onChange={(e) => {
-                    const nextValue = Number(e.target.value);
-                    setBudget(Number.isFinite(nextValue) ? nextValue : 0);
-                  }}
-                  className="budget-input-unified"
-                  aria-label="Maximum price"
-                  placeholder="Max budget"
-                />
-              </div>
-              
+
               <div className="search-controls">
                 <button type="submit" className="search-button" disabled={loading}>
                   {loading ? "Searching…" : "Search"}
@@ -767,10 +761,8 @@ export default function App() {
                       <div className="history-meta">
                         <span>{item.topTitle ? item.topTitle : "No results"}</span>
                         <span>• Coverage {(item.coverageScore * 100).toFixed(0)}%</span>
-                        {typeof item.budget === "number" && item.budget > 0 && (
-                          <span>
-                            • {(item.currency ?? currency)} ≤ {item.budget.toLocaleString()}
-                          </span>
+                        {item.currency && (
+                          <span>• Currency {item.currency}</span>
                         )}
                       </div>
                     </button>
@@ -800,10 +792,6 @@ export default function App() {
 
           {runSummary && (
             <div className="metrics-panel">
-              <div>
-                <span className="metric-label">Run ID</span>
-                <span className="metric-value mono">{runSummary.runId}</span>
-              </div>
               <div>
                 <span className="metric-label">Total time</span>
                 <span className="metric-value">{(runSummary.totalTimeMs / 1000).toFixed(2)}s</span>

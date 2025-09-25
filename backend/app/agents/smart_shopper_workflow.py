@@ -336,9 +336,20 @@ class SmartShopperWorkflow:
             logger.warning("WARNING: No search results found - routing to error handler")
             return "no_results"
         
-        if coverage_score < 0.3:
-            logger.warning(f"WARNING: Low coverage score ({coverage_score:.2f}) - attempting recovery")
+        # More nuanced coverage thresholds
+        # Very low coverage: < 0.15 (15%) - likely extraction failures
+        # Low coverage: 0.15-0.25 (15-25%) - poor quality but usable
+        # Acceptable coverage: > 0.25 (25%) - proceed normally
+        
+        if coverage_score < 0.15:
+            logger.warning(f"WARNING: Very low coverage score ({coverage_score:.2f}) - attempting recovery")
             return "low_coverage"
+        elif coverage_score < 0.25:
+            logger.info(f"INFO: Moderate coverage score ({coverage_score:.2f}) - proceeding with warning")
+            # Add warning but continue processing
+            state.setdefault("warnings", []).append(
+                f"Moderate content coverage ({coverage_score:.1%}) - some details may be missing"
+            )
         
         logger.info(f"SUCCESS: Good retrieval quality - coverage: {coverage_score:.2f}, results: {len(raw_results)}")
         return "proceed"

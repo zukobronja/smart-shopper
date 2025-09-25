@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     FRONTEND_BASE_URL: str = "http://localhost:3000"
     
     # Embeddings
-    EMBEDDINGS_PROVIDER: str = "minilm"  # "openai" or "minilm"
+    EMBEDDINGS_PROVIDER: str = "openai"  # "openai" or "minilm"
     
     # Email
     EMAIL_PROVIDER: str = "console"  # "ses", "sendgrid", "console"
@@ -68,6 +68,11 @@ class Settings(BaseSettings):
     RSS_DEFAULT_POLL_MINUTES: int = 10
     RSS_MAX_CONCURRENT_FETCHES: int = 3
     RSS_EMBED_BATCH_SIZE: int = 16
+    
+    # Enhanced RSS price extraction
+    TAVILY_RSS_FEED_INGESTION: bool = False  # Use Tavily for RSS link price extraction
+    RSS_ENABLE_WEB_SCRAPING: bool = True     # Enable lightweight web scraping for prices
+    RSS_SCRAPING_TIMEOUT: int = 5            # Timeout for web scraping in seconds
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

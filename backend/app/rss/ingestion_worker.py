@@ -17,6 +17,7 @@ from app.db.client import mongo_client
 from app.db.models import RSSFeed, RSSFeedStatus
 from app.rss.embedding_provider import RSSEmbeddingProvider
 from app.rss.feed_service import list_feeds
+from app.rss.price_extractor import extract_enhanced_price
 
 logger = logging.getLogger(__name__)
 
@@ -164,14 +165,20 @@ class RSSIngestionWorker:
         entries = resource.get("entries", [])
         normalized = []
         now = datetime.now(timezone.utc)
+        
         for entry in entries:
             link = entry.get("link")
             title = entry.get("title")
             if not link or not title:
                 continue
+            
             published = self._parse_published(entry)
             summary = entry.get("summary") or entry.get("description")
             dedupe_hash = self._create_dedupe_hash(feed.url, title, link)
+            
+            # Enhanced price extraction using multiple strategies
+            price_amount, price_currency = await extract_enhanced_price(entry, self._session)
+            
             normalized.append(
                 {
                     "feed_id": feed.id,
@@ -184,8 +191,8 @@ class RSSIngestionWorker:
                     "published_at": published,
                     "retrieved_at": now,
                     "dedupe_hash": dedupe_hash,
-                    "price_amount": self._extract_price(entry),
-                    "price_currency": self._extract_currency(entry),
+                    "price_amount": price_amount,
+                    "price_currency": price_currency,
                     "tags": feed.tags,
                     "categories": feed.categories,
                 }
@@ -293,20 +300,7 @@ class RSSIngestionWorker:
         parsed = urlparse(link)
         return parsed.netloc.lower()
 
-    @staticmethod
-    def _extract_price(entry: Dict[str, Any]) -> Optional[float]:
-        price = entry.get("price")
-        try:
-            return float(price) if price is not None else None
-        except (TypeError, ValueError):
-            return None
-
-    @staticmethod
-    def _extract_currency(entry: Dict[str, Any]) -> Optional[str]:
-        currency = entry.get("pricecurrency") or entry.get("currency")
-        if currency and isinstance(currency, str):
-            return currency.upper()
-        return None
+# Price extraction is now handled by enhanced price extractor
 
 
 _worker: Optional[RSSIngestionWorker] = None

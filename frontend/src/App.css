@@ -109,37 +109,37 @@ body {
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .logo-container {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 30px rgba(26, 182, 178, 0.25);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
 }
 
 .logo-image {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
 }
 
 .brand-name {
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   color: var(--text-primary);
 }
 
 .brand-tagline {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-tertiary);
   margin-top: 1px;
 }
@@ -148,6 +148,12 @@ body {
   display: flex;
   align-items: center;
   gap: 24px;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
 .nav-link {
@@ -165,6 +171,12 @@ body {
 .nav-button {
   padding: 8px 16px;
   font-size: 14px;
+}
+
+.nav-actions .nav-button {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .nav-user {
@@ -291,18 +303,18 @@ body {
 }
 
 .price-display:hover {
-  border-color: var(--brand-teal);
+  border-color: var(--teal);
   background: rgba(26, 182, 178, 0.05);
 }
 
 .price-amount {
-  color: var(--brand-teal);
+  color: var(--teal);
   font-weight: 600;
   font-size: 16px;
 }
 
 .price-currency {
-  color: var(--brand-indigo);
+  color: var(--indigo);
   font-weight: 500;
   font-size: 14px;
   padding: 2px 6px;
@@ -320,7 +332,6 @@ body {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
   margin-top: 4px;
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
@@ -358,7 +369,7 @@ body {
 
 .currency-symbol {
   font-weight: 600;
-  color: var(--brand-teal);
+  color: var(--teal);
   min-width: 24px;
 }
 
@@ -372,6 +383,49 @@ body {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
+}
+
+.nav-currency-control {
+  position: relative;
+}
+
+.nav-currency-control .price-display {
+  height: 38px;
+  min-width: 120px;
+  padding: 0 14px;
+  border-radius: 12px;
+  gap: 8px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+}
+
+.nav-currency-control .price-display:hover,
+.nav-currency-control .price-display:focus {
+  border-color: rgba(26, 182, 178, 0.5);
+  box-shadow: 0 0 0 2px rgba(26, 182, 178, 0.18);
+}
+
+.nav-currency-control .currency-symbol {
+  font-size: 16px;
+}
+
+.nav-currency-control .currency-code {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.nav-currency-control .dropdown-arrow {
+  font-size: 11px;
+}
+
+.nav-currency-control .currency-dropdown {
+  right: 0;
+  left: auto;
+  margin-top: 6px;
+  min-width: 220px;
+  width: max-content;
 }
 
 .budget-input-unified {
@@ -391,7 +445,7 @@ body {
 
 .budget-input-unified:focus {
   outline: none;
-  border-color: var(--brand-teal);
+  border-color: var(--teal);
   box-shadow: 0 0 0 2px rgba(26, 182, 178, 0.2);
 }
 

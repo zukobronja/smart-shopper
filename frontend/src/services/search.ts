@@ -41,3 +41,28 @@ export async function searchProducts(payload: SearchRequestPayload, signal?: Abo
   const data = (await response.json()) as SearchResponse;
   return data;
 }
+
+export async function fetchSearchRun(runId: string, signal?: AbortSignal): Promise<SearchResponse> {
+  const response = await fetch(buildUrl(`/v1/search/${runId}`), {
+    method: "GET",
+    credentials: "include",
+    signal,
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Failed to load search run (status ${response.status})`;
+    try {
+      const body = await response.json();
+      if (body?.detail) {
+        errorMessage = Array.isArray(body.detail)
+          ? body.detail.map((entry: unknown) => (typeof entry === "string" ? entry : "")).join(", ") || errorMessage
+          : String(body.detail);
+      }
+    } catch (_err) {
+      // Ignore JSON parse errors
+    }
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as SearchResponse;
+}

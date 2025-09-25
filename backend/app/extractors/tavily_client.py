@@ -276,11 +276,25 @@ class OptimizedTavilyClient:
                 fallback_tasks = [self.fallback_crawl_step(url) for url in low_coverage_urls]
                 fallback_data = await asyncio.gather(*fallback_tasks, return_exceptions=True)
         
+        # Calculate overall coverage from extracted data
+        if extracted_data:
+            successful_extractions = [item for item in extracted_data if item.get("success", False)]
+            if successful_extractions:
+                coverage_scores = [item.get("coverage_score", 0.0) for item in successful_extractions]
+                overall_coverage = sum(coverage_scores) / len(coverage_scores)
+            else:
+                overall_coverage = 0.0
+        else:
+            overall_coverage = 0.0
+        
+        logger.info(f"Two-step process complete: {len(extracted_data)} extractions, overall coverage: {overall_coverage:.3f}")
+        
         return {
             "search_results": search_results,
             "extracted_data": extracted_data,
             "fallback_data": fallback_data,
             "total_urls": len(urls),
+            "overall_coverage": overall_coverage,  # Add missing overall coverage
             "config_used": self.config.model_dump()
         }
     
@@ -349,30 +363,38 @@ class OptimizedTavilyClient:
     def _calculate_coverage(self, extracted_data: Dict[str, Any]) -> float:
         """
         Calculate extraction coverage score
-        This is a placeholder - real implementation will use schema validation
+        Enhanced to handle both raw content and structured data
         """
-        # Simple heuristic based on content length and structure
         content = extracted_data.get("raw_content", "")
+        structured_data = extracted_data.get("structured_data", {})
         
         # Handle non-string content gracefully
-        if not content or not isinstance(content, str):
+        if not content and not structured_data:
             return 0.0
         
-        # Basic scoring based on content indicators
         score = 0.0
         
-        # Length score (capped at 0.4)
-        length_score = min(len(content) / 2000, 0.4)  # Normalize to 2000 chars
-        score += length_score
+        # Score from structured data (higher weight)
+        if structured_data:
+            structured_fields = ["title", "price", "brand", "specifications", "description"]
+            filled_fields = sum(1 for field in structured_fields if structured_data.get(field))
+            structured_score = (filled_fields / len(structured_fields)) * 0.7  # 70% weight
+            score += structured_score
         
-        # Structure indicators
-        price_indicators = ["$", "€", "£", "price", "cost"] # TODO: support all currencies for global use
-        if any(indicator in content.lower() for indicator in price_indicators):
-            score += 0.3
-        
-        spec_indicators = ["specs", "specifications", "features", "ram", "cpu", "storage"]
-        if any(indicator in content.lower() for indicator in spec_indicators):
-            score += 0.3
+        # Score from raw content
+        if content and isinstance(content, str):
+            # Length score (capped at 0.2)
+            length_score = min(len(content) / 2000, 0.2)  # Normalize to 2000 chars
+            score += length_score
+            
+            # Structure indicators (10% each)
+            price_indicators = ["$", "€", "£", "¥", "₹", "₪", "price", "cost"]
+            if any(indicator in content.lower() for indicator in price_indicators):
+                score += 0.1
+            
+            spec_indicators = ["specs", "specifications", "features", "ram", "cpu", "storage", "memory"]
+            if any(indicator in content.lower() for indicator in spec_indicators):
+                score += 0.1
         
         return min(score, 1.0)
     
@@ -738,8 +760,23 @@ class OptimizedTavilyClient:
                 logger.info(f"Processing batch {batch_num}/{total_batches}: {len(batch)} URLs")
                 
                 async with self.semaphore:
+                    # Use structured extraction schema for better data quality
+                    product_schema = {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string", "description": "Product title or name"},
+                            "price": {"type": "number", "description": "Product price as a number"},
+                            "currency": {"type": "string", "description": "Price currency (USD, EUR, etc.)"},
+                            "brand": {"type": "string", "description": "Product brand or manufacturer"},
+                            "specifications": {"type": "object", "description": "Product specifications and features"},
+                            "availability": {"type": "string", "description": "Product availability status"},
+                            "description": {"type": "string", "description": "Product description or summary"}
+                        }
+                    }
+                    
                     batch_result = await self.async_client.extract(
                         urls=batch,
+                        schema=product_schema,  # Add structured schema for better extraction
                         extract_depth="advanced",  # Better quality extraction
                         format="markdown",
                         timeout=self.config.extract_timeout_sec
@@ -773,6 +810,36 @@ class OptimizedTavilyClient:
         
         return results
     
+    async def extract_structured(
+        self, 
+        urls: List[str], 
+        schema: Dict[str, Any],
+        max_extraction_pages: int = 1
+    ) -> Dict[str, Any]:
+        """
+        Extract structured data using schema - for RSS price extractor compatibility
+        """
+        try:
+            if not urls:
+                return {"results": []}
+            
+            # Use the first URL only for compatibility
+            url = urls[0] if isinstance(urls, list) else urls
+            
+            async with self.semaphore:
+                result = await self.async_client.extract(
+                    urls=[url],
+                    schema=schema,
+                    extract_depth="advanced",
+                    format="markdown",
+                    timeout=self.config.extract_timeout_sec
+                )
+            
+            return result
+        except Exception as e:
+            logger.error(f"Structured extraction failed: {e}")
+            return {"results": []}
+    
     def _process_extraction_result(self, result: Dict[str, Any], batch_num: int) -> Dict[str, Any]:
         """Process and enrich extraction result from batch"""
         url = result.get('url', '')
@@ -780,21 +847,36 @@ class OptimizedTavilyClient:
             return None
         
         domain = self._extract_domain(url)
-        content = result.get('content', '')
+        
+        # Get content from correct field (Tavily uses 'raw_content')
+        raw_content = result.get('raw_content', '')
+        content = result.get('content', '')  # Fallback for backwards compatibility
+        
+        # Use raw_content if available, otherwise fall back to content
+        final_content = raw_content if raw_content else content
+        
+        # Handle structured extraction results
+        structured_data = {}
+        if isinstance(result.get('extracted_data'), dict):
+            structured_data = result['extracted_data']
+        elif isinstance(final_content, dict):
+            structured_data = final_content
+            final_content = str(final_content)  # Convert to string for legacy compatibility
         
         processed_result = {
             "url": url,
             "domain": domain,
-            "raw_content": content,
+            "raw_content": final_content,
+            "structured_data": structured_data,  # Add structured data from schema extraction
             "extracted_at": datetime.now(timezone.utc).isoformat(),
             "method": "batch_optimized",
             "batch_number": batch_num,
-            "success": bool(content),
+            "success": bool(final_content) or bool(structured_data),
             "extraction_method": "tavily_extract_advanced"
         }
         
         # Calculate coverage and quality scores
-        if content:
+        if final_content or structured_data:
             coverage = self._calculate_coverage(processed_result)
             domain_quality = get_domain_quality_score(domain)
             
