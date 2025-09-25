@@ -4,13 +4,7 @@
 # Stage 1: Build React Frontend
 FROM node:20-alpine AS frontend-builder
 
-# Build argument for API base URL (set by EB environment)
-ARG VITE_API_BASE_URL=http://localhost:8000
-
 WORKDIR /app/frontend
-
-# Set environment variable for Vite build
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 # Copy package files first for better Docker layer caching
 COPY frontend/package*.json ./
@@ -18,9 +12,12 @@ COPY frontend/package*.json ./
 # Install dependencies (cached layer if package.json unchanged)
 RUN npm ci --no-audit --no-fund
 
-# Copy source code and build
+# Copy source code
 COPY frontend/ ./
-RUN npm run build
+
+# Set production API URL for EB deployment (hardcoded for now)
+ENV VITE_API_BASE_URL=http://smartshopper-env1.eba-dqyremt4.eu-central-1.elasticbeanstalk.com
+RUN echo "Building frontend with VITE_API_BASE_URL=${VITE_API_BASE_URL}" && npm run build
 
 # Stage 2: Production Backend - Lightweight Python Runtime
 FROM python:3.12-slim AS production
