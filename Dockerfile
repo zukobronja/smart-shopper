@@ -4,7 +4,13 @@
 # Stage 1: Build React Frontend
 FROM node:20-alpine AS frontend-builder
 
+# Build argument for API base URL (set by EB environment)
+ARG VITE_API_BASE_URL=http://localhost:8000
+
 WORKDIR /app/frontend
+
+# Set environment variable for Vite build
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 # Copy package files first for better Docker layer caching
 COPY frontend/package*.json ./
