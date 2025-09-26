@@ -631,40 +631,98 @@ class SpecExtractorAgent(SmartShopperAgent):
         price_info = {}
         
         # Comprehensive currency-specific patterns (most specific first)
+        # Aligned with RSS price extraction patterns for consistency
         price_patterns = [
             # More specific currency symbols first (to avoid conflicts)
             # CAD patterns (must come before USD $)
             (r'C\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "CAD"),  # C$1,299.99
             (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*CAD', "CAD"),  # 1299.99 CAD
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*canadian', "CAD"),  # 1299.99 canadian
             
             # AUD patterns (must come before USD $)
             (r'A\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "AUD"),  # A$1,299.99
             (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*AUD', "AUD"),  # 1299.99 AUD
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*australian', "AUD"),  # 1299.99 australian
+            
+            # HKD patterns (must come before USD $)
+            (r'HK\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "HKD"),  # HK$9,999.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*HKD', "HKD"),  # 9999.99 HKD
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*hong\s*kong', "HKD"),  # 9999.99 hong kong
+            
+            # SGD patterns (must come before USD $)
+            (r'S\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "SGD"),  # S$1,299.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*SGD', "SGD"),  # 1299.99 SGD
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*singapore', "SGD"),  # 1299.99 singapore
+            
+            # NZD patterns (must come before USD $)
+            (r'NZ\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "NZD"),  # NZ$1,299.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*NZD', "NZD"),  # 1299.99 NZD
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*new\s*zealand', "NZD"),  # 1299.99 new zealand
             
             # USD patterns (generic $ symbol - comes after specific ones)
             (r'\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "USD"),  # $1,299.99, $99.99
             (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*USD', "USD"),  # 1299.99 USD
-            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:dollars?)', "USD"),  # 99 dollars
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:usd|dollars?)', "USD"),  # 99 dollars
             
-            # EUR patterns
+            # EUR patterns (handle European decimal formats)
             (r'€(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)', "EUR"),  # €1.299,99, €99,99
             (r'(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)\s*EUR', "EUR"),  # 1299.99 EUR
-            (r'(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)\s*euros?', "EUR"),  # 99 euros
+            (r'(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)\s*€', "EUR"),  # 1299.99 €
+            (r'(\d{1,3}(?:[,.\s]\d{3})*(?:[,\.]\d{2})?)\s*(?:eur|euros?)', "EUR"),  # 99 euros
             
             # GBP patterns
             (r'£(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "GBP"),  # £1,299.99
             (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*GBP', "GBP"),  # 1299.99 GBP
-            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*pounds?', "GBP"),  # 99 pounds
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:gbp|pounds?)', "GBP"),  # 99 pounds
             
             # JPY patterns
             (r'¥(\d{1,3}(?:,\d{3})*)', "JPY"),  # ¥99,999
             (r'(\d{1,3}(?:,\d{3})*)\s*JPY', "JPY"),  # 99999 JPY
-            (r'(\d{1,3}(?:,\d{3})*)\s*yen', "JPY"),  # 99999 yen
+            (r'(\d{1,3}(?:,\d{3})*)\s*¥', "JPY"),  # 99999 ¥
+            (r'(\d{1,3}(?:,\d{3})*)\s*(?:jpy|yen)', "JPY"),  # 99999 yen
             
             # INR patterns
             (r'₹(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)', "INR"),  # ₹99,999.99
             (r'(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)\s*INR', "INR"),  # 99,999.99 INR
+            (r'(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)\s*₹', "INR"),  # 99,999.99 ₹
+            (r'(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)\s*(?:inr|rupees?)', "INR"),  # 99999 rupees
             (r'Rs\.?\s*(\d{1,2}(?:,\d{2})*(?:,\d{3})(?:\.\d{2})?)', "INR"),  # Rs. 99,999.99
+            
+            # CHF patterns
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*CHF', "CHF"),  # 1299.99 CHF
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:chf|swiss)', "CHF"),  # 1299.99 swiss
+            
+            # CNY patterns
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*CNY', "CNY"),  # 8999.99 CNY
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:cny|yuan|rmb)', "CNY"),  # 8999.99 yuan
+            
+            # KRW patterns
+            (r'₩(\d{1,3}(?:,\d{3})*)', "KRW"),  # ₩1,299,999 (no decimals)
+            (r'(\d{1,3}(?:,\d{3})*)\s*KRW', "KRW"),  # 1299999 KRW
+            (r'(\d{1,3}(?:,\d{3})*)\s*₩', "KRW"),  # 1299999 ₩
+            (r'(\d{1,3}(?:,\d{3})*)\s*(?:krw|won)', "KRW"),  # 1299999 won
+            
+            # SEK patterns
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*SEK', "SEK"),  # 12999.99 SEK
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:sek|krona)', "SEK"),  # 12999.99 krona
+            
+            # NOK patterns
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*NOK', "NOK"),  # 12999.99 NOK
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:nok|norwegian)', "NOK"),  # 12999.99 norwegian
+            
+            # DKK patterns
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*DKK', "DKK"),  # 9999.99 DKK
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:dkk|danish)', "DKK"),  # 9999.99 danish
+            
+            # ILS patterns
+            (r'₪(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', "ILS"),  # ₪4,999.99
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*ILS', "ILS"),  # 4999.99 ILS
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*₪', "ILS"),  # 4999.99 ₪
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:ils|shekel|shekels)', "ILS"),  # 4999.99 shekels
+            
+            # AED patterns
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*AED', "AED"),  # 4999.99 AED
+            (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:aed|dirhams?)', "AED"),  # 4999.99 dirhams
             
             # Generic currency patterns (lower priority)
             (r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:currency|price)', "USD"),  # fallback

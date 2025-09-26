@@ -136,6 +136,28 @@ def get_topic_for_intent(intent: str) -> str:
     }
     return topic_mapping.get(intent, "general")
 
+# Domains that block programmatic access (access denied/403 errors)
+ACCESS_DENIED_DOMAINS = [
+    "homedepot.com",  # Returns 403 for category pages
+    "lowes.com",      # Similar access restrictions 
+    "amazon.co.uk",   # Regional Amazon sites with stricter bot detection
+    "walmart.ca",     # Canadian Walmart with access restrictions
+]
+
+def is_domain_blocked(url: str) -> bool:
+    """Check if domain is known to block programmatic access"""
+    if not url:
+        return False
+    
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower().replace("www.", "")
+        
+        return any(blocked_domain in domain for blocked_domain in ACCESS_DENIED_DOMAINS)
+    except Exception:
+        return False
+
 # Domain quality scoring weights
 DOMAIN_QUALITY_SCORES = {
     # High-quality e-commerce (0.9-1.0)

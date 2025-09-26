@@ -220,7 +220,8 @@ class RSSIngestionWorker:
             )
             return
 
-        texts = [item.get("summary") or item["title"] for item in new_items]
+        # Enhanced embedding text generation with rich context
+        texts = [self._generate_rich_embedding_text(item) for item in new_items]
         embeddings = await self._embedding_provider.embed_texts(texts)
         minilm_vectors = embeddings.get("minilm", [])
         openai_vectors = embeddings.get("openai", [])
@@ -299,6 +300,65 @@ class RSSIngestionWorker:
 
         parsed = urlparse(link)
         return parsed.netloc.lower()
+
+    def _generate_rich_embedding_text(self, item: Dict[str, Any]) -> str:
+        """
+        Generate rich context text for embedding from RSS item data.
+        
+        Combines title, summary, and structured metadata for better semantic search.
+        This replaces the simple "summary or title" approach with comprehensive context.
+        """
+        parts = []
+        
+        # Always include title (high semantic value for product searches)
+        if item.get("title"):
+            parts.append(item["title"].strip())
+        
+        # Add summary/description (detailed context and deal information)
+        if item.get("summary"):
+            # Truncate very long summaries to avoid token limits
+            summary = item["summary"].strip()
+            if len(summary) > 500:
+                summary = summary[:500] + "..."
+            parts.append(summary)
+        
+        # Add structured context for better semantic matching
+        context_parts = []
+        
+        # Price context (critical for deal matching and comparison)
+        if item.get("price_amount") and item.get("price_currency"):
+            context_parts.append(f"Price: {item['price_currency']} {item['price_amount']}")
+        
+        # Category context (product classification for better filtering)
+        if item.get("categories") and isinstance(item["categories"], list):
+            categories = [cat for cat in item["categories"] if cat]  # Filter empty categories
+            if categories:
+                context_parts.append(f"Categories: {', '.join(categories)}")
+        
+        # Tag context (deal characteristics and attributes)
+        if item.get("tags") and isinstance(item["tags"], list):
+            tags = [tag for tag in item["tags"] if tag]  # Filter empty tags
+            if tags:
+                context_parts.append(f"Tags: {', '.join(tags)}")
+        
+        # Source context (domain reputation and site-specific search)
+        if item.get("source_domain"):
+            # Clean domain name for better readability
+            domain_name = item["source_domain"].replace(".com", "").replace(".net", "").replace("www.", "")
+            context_parts.append(f"Source: {domain_name}")
+        
+        # Combine main content with structured context
+        if context_parts:
+            parts.append(" | ".join(context_parts))
+        
+        # Final text with clear separation between content and metadata
+        rich_text = " | ".join(parts)
+        
+        # Log first few rich texts for debugging (only during development)
+        if len(rich_text) > 200:  # Only log substantial texts
+            logger.debug(f"Rich embedding text (first 200 chars): {rich_text[:200]}...")
+        
+        return rich_text
 
 # Price extraction is now handled by enhanced price extractor
 

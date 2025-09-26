@@ -26,12 +26,16 @@ class TavilyConfig(BaseModel):
     max_results: int = 10  # Conservative default
     max_concurrent: int = 3  # Rate limiting
     enable_fallback: bool = False  # Skip crawl in dev
-    extract_timeout_sec: int = 60  # Extraction timeout per batch
-    fallback_timeout_sec: int = 30  # Crawl timeout for fallback
+    extract_timeout_sec: int = 120  # Increased timeout for batch extraction
+    request_timeout_sec: int = 45  # Individual request timeout
+    fallback_timeout_sec: int = 60  # Crawl timeout for fallback
     fallback_max_depth: int = 1  # Depth for crawl fallback
     fallback_max_urls: int = 3  # Number of low-coverage URLs to crawl
     coverage_threshold: float = 0.60
     query_max_length: int = 400
+    # Performance tuning
+    retry_attempts: int = 2  # Number of retry attempts
+    backoff_factor: float = 1.5  # Exponential backoff multiplier
     # Phase 2 enhancements
     enable_intent_optimization: bool = True  # Use intent-based parameters
     enable_quality_filter: bool = False  # Filter URLs by domain quality
@@ -109,7 +113,7 @@ class OptimizedTavilyClient:
         use_intent_optimization: bool = True
     ) -> Dict[str, Any]:
         """
-        Step 1: Search for candidate URLs with intelligent optimization
+        Step 1: Search for candidate URLs with intelligent optimization and retry logic
         """
         optimized_query = self.optimize_query(query, intent)
         
@@ -142,16 +146,34 @@ class OptimizedTavilyClient:
         
         logger.info(f"Tavily search: '{optimized_query}' (params: {search_params})")
         
-        try:
-            async with self.semaphore:  # Rate limiting
-                result = await self.async_client.search(**search_params)
-            
-            logger.info(f"Search returned {len(result.get('results', []))} results")
-            return result
-            
-        except Exception as e:
-            logger.error(f"Tavily search failed: {e}")
-            raise
+        # Implement retry logic with exponential backoff
+        for attempt in range(self.config.retry_attempts + 1):
+            try:
+                async with self.semaphore:  # Rate limiting
+                    result = await asyncio.wait_for(
+                        self.async_client.search(**search_params),
+                        timeout=self.config.request_timeout_sec
+                    )
+                
+                logger.info(f"Search returned {len(result.get('results', []))} results")
+                return result
+                
+            except asyncio.TimeoutError:
+                logger.warning(f"Search timeout on attempt {attempt + 1}/{self.config.retry_attempts + 1}")
+                if attempt < self.config.retry_attempts:
+                    wait_time = self.config.backoff_factor ** attempt
+                    logger.info(f"Retrying in {wait_time:.1f}s...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise TimeoutError(f"Search failed after {self.config.retry_attempts + 1} attempts")
+            except Exception as e:
+                logger.error(f"Tavily search failed on attempt {attempt + 1}: {e}")
+                if attempt < self.config.retry_attempts:
+                    wait_time = self.config.backoff_factor ** attempt
+                    logger.info(f"Retrying in {wait_time:.1f}s...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise
     
     def _filter_urls_by_quality(self, urls: List[str], min_quality_score: float = 0.6) -> List[str]:
         """Filter URLs by domain quality to reduce costs"""
@@ -310,36 +332,58 @@ class OptimizedTavilyClient:
             return []
     
     async def langchain_extract(self, url: str) -> Dict:
-        """Extract using native Tavily client (more reliable than LangChain wrapper)"""
-        try:
-            # Use native async client instead of LangChain wrapper
-            async with self.semaphore:
-                result = await self.async_client.extract(
-                    urls=[url],
-                    extract_depth="advanced",
-                    format="markdown"
-                )
-            
-            # Extract content from result
-            content = ""
-            if result.get('results') and len(result['results']) > 0:
-                content = result['results'][0].get('content', '')
-            
-            return {
-                "url": url,
-                "raw_content": content,
-                "status": "success" if content else "failed",
-                "method": "langchain_extract_native"
-            }
-        except Exception as e:
-            logger.error(f"LangChain extract failed for {url}: {e}")
-            return {
-                "url": url,
-                "raw_content": None,
-                "status": "failed",
-                "error": str(e),
-                "method": "langchain_extract_native"
-            }
+        """Extract using native Tavily client with retry logic (more reliable than LangChain wrapper)"""
+        for attempt in range(self.config.retry_attempts + 1):
+            try:
+                # Use native async client instead of LangChain wrapper
+                async with self.semaphore:
+                    result = await asyncio.wait_for(
+                        self.async_client.extract(
+                            urls=[url],
+                            extract_depth="advanced",
+                            format="markdown"
+                        ),
+                        timeout=self.config.request_timeout_sec
+                    )
+                
+                # Extract content from result
+                content = ""
+                if result.get('results') and len(result['results']) > 0:
+                    content = result['results'][0].get('content', '')
+                
+                return {
+                    "url": url,
+                    "raw_content": content,
+                    "status": "success" if content else "failed",
+                    "method": "langchain_extract_native"
+                }
+            except asyncio.TimeoutError:
+                logger.warning(f"LangChain extract timeout for {url} on attempt {attempt + 1}/{self.config.retry_attempts + 1}")
+                if attempt < self.config.retry_attempts:
+                    wait_time = self.config.backoff_factor ** attempt
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error(f"LangChain extract failed for {url}: Timeout after {self.config.retry_attempts + 1} attempts")
+                    return {
+                        "url": url,
+                        "raw_content": None,
+                        "status": "failed",
+                        "error": f"Timeout after {self.config.retry_attempts + 1} attempts",
+                        "method": "langchain_extract_native"
+                    }
+            except Exception as e:
+                logger.error(f"LangChain extract failed for {url} on attempt {attempt + 1}: {e}")
+                if attempt < self.config.retry_attempts:
+                    wait_time = self.config.backoff_factor ** attempt
+                    await asyncio.sleep(wait_time)
+                else:
+                    return {
+                        "url": url,
+                        "raw_content": None,
+                        "status": "failed",
+                        "error": str(e),
+                        "method": "langchain_extract_native"
+                    }
     
     def _get_topic_for_intent(self, intent: str) -> str:
         """Get appropriate topic based on search intent"""
@@ -774,13 +818,35 @@ class OptimizedTavilyClient:
                         }
                     }
                     
-                    batch_result = await self.async_client.extract(
-                        urls=batch,
-                        schema=product_schema,  # Add structured schema for better extraction
-                        extract_depth="advanced",  # Better quality extraction
-                        format="markdown",
-                        timeout=self.config.extract_timeout_sec
-                    )
+                    # Implement retry logic for batch extraction
+                    batch_result = None
+                    for attempt in range(self.config.retry_attempts + 1):
+                        try:
+                            batch_result = await asyncio.wait_for(
+                                self.async_client.extract(
+                                    urls=batch,
+                                    schema=product_schema,  # Add structured schema for better extraction
+                                    extract_depth="advanced",  # Better quality extraction
+                                    format="markdown"
+                                ),
+                                timeout=self.config.extract_timeout_sec
+                            )
+                            break  # Success, exit retry loop
+                        except asyncio.TimeoutError:
+                            logger.warning(f"Batch {batch_num} timeout on attempt {attempt + 1}/{self.config.retry_attempts + 1}")
+                            if attempt < self.config.retry_attempts:
+                                wait_time = self.config.backoff_factor ** attempt
+                                logger.info(f"Retrying batch {batch_num} in {wait_time:.1f}s...")
+                                await asyncio.sleep(wait_time)
+                            else:
+                                raise TimeoutError(f"Batch {batch_num} failed after {self.config.retry_attempts + 1} attempts")
+                        except Exception as e:
+                            logger.error(f"Batch {batch_num} extraction error on attempt {attempt + 1}: {e}")
+                            if attempt < self.config.retry_attempts:
+                                wait_time = self.config.backoff_factor ** attempt
+                                await asyncio.sleep(wait_time)
+                            else:
+                                raise
                 
                 batch_results = batch_result.get('results', [])
                 
@@ -817,7 +883,7 @@ class OptimizedTavilyClient:
         max_extraction_pages: int = 1
     ) -> Dict[str, Any]:
         """
-        Extract structured data using schema - for RSS price extractor compatibility
+        Extract structured data using schema with retry logic - for RSS price extractor compatibility
         """
         try:
             if not urls:
@@ -826,16 +892,35 @@ class OptimizedTavilyClient:
             # Use the first URL only for compatibility
             url = urls[0] if isinstance(urls, list) else urls
             
-            async with self.semaphore:
-                result = await self.async_client.extract(
-                    urls=[url],
-                    schema=schema,
-                    extract_depth="advanced",
-                    format="markdown",
-                    timeout=self.config.extract_timeout_sec
-                )
-            
-            return result
+            # Implement retry logic for structured extraction
+            for attempt in range(self.config.retry_attempts + 1):
+                try:
+                    async with self.semaphore:
+                        result = await asyncio.wait_for(
+                            self.async_client.extract(
+                                urls=[url],
+                                schema=schema,
+                                extract_depth="advanced",
+                                format="markdown"
+                            ),
+                            timeout=self.config.extract_timeout_sec
+                        )
+                    return result
+                except asyncio.TimeoutError:
+                    logger.warning(f"Structured extraction timeout for {url} on attempt {attempt + 1}/{self.config.retry_attempts + 1}")
+                    if attempt < self.config.retry_attempts:
+                        wait_time = self.config.backoff_factor ** attempt
+                        await asyncio.sleep(wait_time)
+                    else:
+                        logger.error(f"Structured extraction failed for {url}: Timeout after {self.config.retry_attempts + 1} attempts")
+                        return {"results": []}
+                except Exception as e:
+                    logger.error(f"Structured extraction error for {url} on attempt {attempt + 1}: {e}")
+                    if attempt < self.config.retry_attempts:
+                        wait_time = self.config.backoff_factor ** attempt
+                        await asyncio.sleep(wait_time)
+                    else:
+                        return {"results": []}
         except Exception as e:
             logger.error(f"Structured extraction failed: {e}")
             return {"results": []}
@@ -1183,21 +1268,24 @@ class OptimizedTavilyClient:
 
 # Factory functions for different environments
 def create_dev_client() -> OptimizedTavilyClient:
-    """Create client optimized for development with minimal credit usage"""
+    """Create client optimized for development with balanced performance and cost"""
     config = TavilyConfig(
         search_depth="basic",              # Basic search (cheaper)
-        max_results=5,                     # Reduced from 6 to 5
-        max_concurrent=1,
-        enable_fallback=False,             # DISABLE EXPENSIVE CRAWL FALLBACK
-        extract_timeout_sec=90,            # Keep original timeout
-        fallback_timeout_sec=45,           # Keep original timeout
-        fallback_max_depth=1,              # Not used when disabled
-        fallback_max_urls=0,               # Not used when disabled
-        coverage_threshold=0.30,           # Lowered from 0.60 to 0.30
-        # Phase 2: Conservative settings for development
+        max_results=6,                     # Reasonable for development testing
+        max_concurrent=2,                  # Allow some concurrency
+        enable_fallback=True,              # Enable fallback for testing
+        extract_timeout_sec=150,           # Generous timeout for development
+        request_timeout_sec=60,            # Individual request timeout
+        fallback_timeout_sec=90,           # Generous fallback timeout
+        fallback_max_depth=1,              # Shallow for dev
+        fallback_max_urls=2,               # Limited fallback URLs
+        coverage_threshold=0.40,           # Reasonable threshold
+        retry_attempts=2,                  # Enable retries in dev
+        backoff_factor=1.5,                # Moderate backoff
+        # Phase 2: Balanced settings for development
         enable_intent_optimization=True,   # Keep intent optimization
-        enable_quality_filter=True,        # Enable filtering to reduce extractions
-        min_domain_quality=0.6,            # Filter low-quality domains
+        enable_quality_filter=False,       # Don't filter in dev for testing
+        min_domain_quality=0.5,            # Lower threshold for dev
         # Phase 3: Conservative Map API settings for development
         enable_map_api=False,              # Disable expensive Map API in dev
         map_max_depth=1,                   # Shallow mapping for testing
@@ -1207,23 +1295,26 @@ def create_dev_client() -> OptimizedTavilyClient:
 
 
 def create_prod_client() -> OptimizedTavilyClient:
-    """Create client optimized for production with credit efficiency"""
+    """Create client optimized for production with reliability and performance"""
     config = TavilyConfig(
-        search_depth="basic",              # Use basic search - advanced is expensive
-        max_results=8,                     # Reduced from 20 to 8
-        max_concurrent=5,                  # Keep original concurrency
-        enable_fallback=False,             # DISABLE EXPENSIVE CRAWL FALLBACK
-        extract_timeout_sec=120,           # Keep original timeout
-        fallback_timeout_sec=60,           # Keep original timeout
-        fallback_max_depth=1,              # Not used when disabled
-        fallback_max_urls=0,               # Not used when disabled
-        coverage_threshold=0.25,           # Lowered from 0.60 to 0.25
-        # Phase 2: Aggressive optimization for production
+        search_depth="advanced",           # Use advanced search for better quality
+        max_results=12,                    # Balanced results count
+        max_concurrent=4,                  # Conservative concurrency for stability
+        enable_fallback=True,              # Enable fallback for comprehensive results
+        extract_timeout_sec=180,           # Generous timeout for production reliability
+        request_timeout_sec=75,            # Individual request timeout
+        fallback_timeout_sec=120,          # Generous fallback timeout
+        fallback_max_depth=2,              # Deeper crawling for production
+        fallback_max_urls=3,               # Limited fallback URLs for cost control
+        coverage_threshold=0.50,           # Balanced coverage threshold
+        retry_attempts=3,                  # More retries for production reliability
+        backoff_factor=2.0,                # Higher backoff for production
+        # Phase 2: Production optimization
         enable_intent_optimization=True,   # Full intent-based optimization
         enable_quality_filter=True,        # Filter low-quality domains
         min_domain_quality=0.7,            # Higher quality threshold
-        # Phase 3: Disabled expensive Map API
-        enable_map_api=False,              # DISABLE expensive Map API
+        # Phase 3: Selective Map API usage
+        enable_map_api=False,              # Keep disabled for cost control
         map_max_depth=2,                   # Keep original depth
         map_max_results=50                 # Keep original results
     )

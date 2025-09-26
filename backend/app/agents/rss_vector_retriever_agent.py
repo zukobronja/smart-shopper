@@ -60,10 +60,21 @@ class RSSVectorRetrieverAgent(SmartShopperAgent):
             return state
 
     def _extract_query_text(self, state: SmartShopperWorkflowState) -> str:
+        """
+        Extract query text for RSS vector search.
+        Use raw query to preserve budget constraints and full user intent.
+        """
+        # Use raw query to preserve budget constraints and modifiers
+        raw_query = state.get("raw_query", "").strip()
+        if raw_query:
+            return raw_query
+        
+        # Fallback to normalized query if raw query unavailable
         search_query = state.get("search_query")
         if search_query and getattr(search_query, "normalized_query", None):
             return search_query.normalized_query
-        return state.get("raw_query", "").strip()
+        
+        return ""
 
     def _select_query_vector(self, embeddings: Dict[str, List[List[float]]]) -> Optional[List[float]]:
         if settings.EMBEDDINGS_PROVIDER == "openai":
@@ -86,6 +97,10 @@ class RSSVectorRetrieverAgent(SmartShopperAgent):
             else "rss_summary_minilm_idx"
         )
         recency_cutoff = datetime.now(timezone.utc) - timedelta(days=self.freshness_days)
+        
+        # Increase candidates for better semantic relevance
+        num_candidates = max(200, self.max_results * 10)
+        vector_limit = self.max_results * 3  # Get more results for filtering
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -93,13 +108,15 @@ class RSSVectorRetrieverAgent(SmartShopperAgent):
                     "index": index_name,
                     "path": vector_field,
                     "queryVector": query_vector,
-                    "numCandidates": max(100, self.max_results * 5),
-                    "limit": self.max_results,
+                    "numCandidates": num_candidates,
+                    "limit": vector_limit,
                 }
             },
             {
                 "$match": {
-                    "published_at": {"$gte": recency_cutoff}
+                    "published_at": {"$gte": recency_cutoff},
+                    # Add minimum relevance threshold
+                    "$expr": {"$gte": [{"$meta": "vectorSearchScore"}, 0.7]}
                 }
             },
             {
@@ -118,6 +135,13 @@ class RSSVectorRetrieverAgent(SmartShopperAgent):
                     "_score": {"$meta": "vectorSearchScore"},
                 }
             },
+            # Additional semantic relevance filtering
+            {
+                "$sort": {"_score": -1}
+            },
+            {
+                "$limit": self.max_results
+            }
         ]
         return pipeline
 

@@ -15,7 +15,7 @@ from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse
 
 from app.agents.state import SmartShopperAgent, SmartShopperWorkflowState, add_agent_step
-from app.extractors.domain_config import get_domain_quality_score
+from app.extractors.domain_config import get_domain_quality_score, is_domain_blocked
 
 
 class CredibilityFilterAgent(SmartShopperAgent):
@@ -70,8 +70,22 @@ class CredibilityFilterAgent(SmartShopperAgent):
             intent = search_query.intent if search_query else "general"
             self.log(f"Processing {len(raw_search_results)} results for intent: {intent}")
             
-            # Score and filter results
-            scored_results = await self._score_results(raw_search_results, extracted_content, intent)
+            # Pre-filter: Remove results from domains known to block access
+            accessible_results = []
+            blocked_count = 0
+            for result in raw_search_results:
+                url = result.get("url", "")
+                if is_domain_blocked(url):
+                    blocked_count += 1
+                    self.log(f"Blocked access-denied domain: {url}")
+                    continue
+                accessible_results.append(result)
+            
+            if blocked_count > 0:
+                self.log(f"Filtered out {blocked_count} results from access-denied domains")
+            
+            # Score and filter accessible results
+            scored_results = await self._score_results(accessible_results, extracted_content, intent)
             filtered_results = self._apply_filtering(scored_results, intent)
             
             # Update state
