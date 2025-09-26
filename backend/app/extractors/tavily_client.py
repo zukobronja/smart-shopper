@@ -1183,20 +1183,21 @@ class OptimizedTavilyClient:
 
 # Factory functions for different environments
 def create_dev_client() -> OptimizedTavilyClient:
-    """Create client optimized for development"""
+    """Create client optimized for development with minimal credit usage"""
     config = TavilyConfig(
-        search_depth="basic",
-        max_results=6,
+        search_depth="basic",              # Basic search (cheaper)
+        max_results=5,                     # Reduced from 6 to 5
         max_concurrent=1,
-        enable_fallback=True,
-        extract_timeout_sec=90,
-        fallback_timeout_sec=45,
-        fallback_max_depth=1,
-        fallback_max_urls=3,
+        enable_fallback=False,             # DISABLE EXPENSIVE CRAWL FALLBACK
+        extract_timeout_sec=90,            # Keep original timeout
+        fallback_timeout_sec=45,           # Keep original timeout
+        fallback_max_depth=1,              # Not used when disabled
+        fallback_max_urls=0,               # Not used when disabled
+        coverage_threshold=0.30,           # Lowered from 0.60 to 0.30
         # Phase 2: Conservative settings for development
-        enable_intent_optimization=True,   # Test new features
-        enable_quality_filter=False,       # Don't filter in dev for testing
-        min_domain_quality=0.5,            # Lower threshold for dev
+        enable_intent_optimization=True,   # Keep intent optimization
+        enable_quality_filter=True,        # Enable filtering to reduce extractions
+        min_domain_quality=0.6,            # Filter low-quality domains
         # Phase 3: Conservative Map API settings for development
         enable_map_api=False,              # Disable expensive Map API in dev
         map_max_depth=1,                   # Shallow mapping for testing
@@ -1206,24 +1207,24 @@ def create_dev_client() -> OptimizedTavilyClient:
 
 
 def create_prod_client() -> OptimizedTavilyClient:
-    """Create client optimized for production"""
+    """Create client optimized for production with credit efficiency"""
     config = TavilyConfig(
-        search_depth="advanced",
-        max_results=20,
-        max_concurrent=5,
-        enable_fallback=True,
-        extract_timeout_sec=120,
-        fallback_timeout_sec=60,
-        fallback_max_depth=2,
-        fallback_max_urls=5,
-        coverage_threshold=0.60,
+        search_depth="basic",              # Use basic search - advanced is expensive
+        max_results=8,                     # Reduced from 20 to 8
+        max_concurrent=5,                  # Keep original concurrency
+        enable_fallback=False,             # DISABLE EXPENSIVE CRAWL FALLBACK
+        extract_timeout_sec=120,           # Keep original timeout
+        fallback_timeout_sec=60,           # Keep original timeout
+        fallback_max_depth=1,              # Not used when disabled
+        fallback_max_urls=0,               # Not used when disabled
+        coverage_threshold=0.25,           # Lowered from 0.60 to 0.25
         # Phase 2: Aggressive optimization for production
         enable_intent_optimization=True,   # Full intent-based optimization
         enable_quality_filter=True,        # Filter low-quality domains
         min_domain_quality=0.7,            # Higher quality threshold
-        # Phase 3: Full Map API integration for production
-        enable_map_api=True,               # Enable comprehensive discovery
-        map_max_depth=2,                   # Deeper mapping for coverage
-        map_max_results=50                 # More results for comprehensive discovery
+        # Phase 3: Disabled expensive Map API
+        enable_map_api=False,              # DISABLE expensive Map API
+        map_max_depth=2,                   # Keep original depth
+        map_max_results=50                 # Keep original results
     )
     return OptimizedTavilyClient(config=config)
