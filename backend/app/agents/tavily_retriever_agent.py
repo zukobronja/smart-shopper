@@ -28,13 +28,15 @@ class TavilyRetrieverAgent(SmartShopperAgent):
     def __init__(self, use_production_config: bool = False):
         super().__init__()
         
-        # Choose configuration based on environment
-        if use_production_config or settings.ENVIRONMENT == "production":
+        # Choose configuration based on TAVILY_CONFIG override or environment
+        tavily_config = settings.TAVILY_CONFIG.lower()
+        
+        if tavily_config == "production" or (tavily_config == "auto" and (use_production_config or settings.ENVIRONMENT == "production")):
             self.tavily_client = create_prod_client()
-            self.log("Initialized with production configuration")
+            self.log(f"Initialized with production configuration (TAVILY_CONFIG={settings.TAVILY_CONFIG})")
         else:
             self.tavily_client = create_dev_client()
-            self.log("Initialized with development configuration")
+            self.log(f"Initialized with development configuration (TAVILY_CONFIG={settings.TAVILY_CONFIG})")
     
     async def process(self, state: SmartShopperWorkflowState) -> SmartShopperWorkflowState:
         """

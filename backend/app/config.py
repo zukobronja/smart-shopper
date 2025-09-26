@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
     TAVILY_API_KEY: str = ""
     
+    # Tavily Configuration Override
+    # Options: "development", "production", "auto" (uses ENVIRONMENT setting)
+    # Cost comparison:
+    # - development: search_depth="basic", max_results=6, fallback_max_depth=1 (cheaper)
+    # - production: search_depth="advanced", max_results=12, fallback_max_depth=2 (expensive)
+    TAVILY_CONFIG: str = "auto"
+    
     # Google OAuth
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
