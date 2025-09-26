@@ -16,7 +16,7 @@ RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
 
 # Set production API URL for EB deployment (hardcoded for now)
-ENV VITE_API_BASE_URL=http://smartshopper-env1.eba-xyz3gch6.eu-central-1.elasticbeanstalk.com
+ENV VITE_API_BASE_URL=http://smartshopper-env.eba-msgpp7bg.eu-central-1.elasticbeanstalk.com
 # ENV VITE_API_BASE_URL=http://localhost:8000
 RUN echo "Building frontend with VITE_API_BASE_URL=${VITE_API_BASE_URL}" && npm run build
 

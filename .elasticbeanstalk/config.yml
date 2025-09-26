@@ -1,12 +1,9 @@
 branch-defaults:
   dev:
-    environment: smartshopper-env1
-    group_suffix: null
-  master:
-    environment: smartshopper-env1
+    environment: smartshopper-env
     group_suffix: null
 global:
-  application_name: smart-shopper1
+  application_name: smart-shopper
   branch: null
   default_ec2_keyname: null
   default_platform: Docker
