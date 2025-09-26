@@ -104,6 +104,11 @@ def build_authorization_url(state_token: str) -> str:
         "prompt": "consent",
         "include_granted_scopes": "true",
     }
+    
+    # Add origin parameter to ensure consistent branding across domains
+    # This helps Google display the correct app name instead of domain
+    if not settings.GOOGLE_REDIRECT_URI.startswith("http://localhost"):
+        params["origin"] = settings.FRONTEND_BASE_URL
 
     return f"{GOOGLE_AUTH_BASE_URL}?{urlencode(params)}"
 
