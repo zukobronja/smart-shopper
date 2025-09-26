@@ -107,18 +107,16 @@ RUN mkdir -p backend/app/static
 COPY --from=frontend-builder /app/frontend/dist/ ./backend/app/static/
 
 # Create startup script for environment variable substitution
-RUN cat > /app/startup.sh << 'EOF'
-#!/bin/bash
-# Replace placeholder with actual environment variable in built frontend files
-if [ ! -z "$VITE_API_BASE_URL" ]; then
-    echo "Configuring frontend with VITE_API_BASE_URL: $VITE_API_BASE_URL"
-    find /app/backend/app/static -type f -name "*.js" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;
-    find /app/backend/app/static -type f -name "*.html" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;
-fi
-# Start the application
-exec "$@"
-EOF
-RUN chmod +x /app/startup.sh
+RUN echo '#!/bin/bash' > /app/startup.sh && \
+    echo '# Replace placeholder with actual environment variable in built frontend files' >> /app/startup.sh && \
+    echo 'if [ ! -z "$VITE_API_BASE_URL" ]; then' >> /app/startup.sh && \
+    echo '    echo "Configuring frontend with VITE_API_BASE_URL: $VITE_API_BASE_URL"' >> /app/startup.sh && \
+    echo '    find /app/backend/app/static -type f -name "*.js" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;' >> /app/startup.sh && \
+    echo '    find /app/backend/app/static -type f -name "*.html" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;' >> /app/startup.sh && \
+    echo 'fi' >> /app/startup.sh && \
+    echo '# Start the application' >> /app/startup.sh && \
+    echo 'exec "$@"' >> /app/startup.sh && \
+    chmod +x /app/startup.sh
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
