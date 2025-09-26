@@ -36,10 +36,10 @@ This document defines how **SmartShopper** integrates with **Tavily** for discov
 
 ## 0) Endpoint Strategy (recap)
 
-1. **search** → candidate URLs (use domain/recency filters, cap per domain).
-2. **map** → triage many URLs; keep `ecom|review` with specs.
-3. **extract** → **preferred** structured extraction to JSON (cheap, robust).
-4. **crawl** → fallback to raw HTML/text; run LLM schema extraction only if `extract` fails or is low-coverage.
+1. **search** -> candidate URLs (use domain/recency filters, cap per domain).
+2. **map** -> triage many URLs; keep `ecom|review` with specs.
+3. **extract** -> **preferred** structured extraction to JSON (cheap, robust).
+4. **crawl** -> fallback to raw HTML/text; run LLM schema extraction only if `extract` fails or is low-coverage.
 
 Short-circuit once you have **≥4 strong e-commerce** pages and **≥2 credible reviews**.
 
@@ -215,7 +215,7 @@ weight_g (number), battery_life (string/number?)
 **Coverage score** = (# non-null extracted fields) / (# expected fields).
 
 * For `ecom_v1`: weigh `offer.price|availability`, `product.title`, and **3+ key specs** higher.
-* If `< 0.60` → mark **low\_coverage: true**; call `crawl` and run LLM schema extraction; then **merge** (prefer concrete numeric fields from either).
+* If `< 0.60` -> mark **low\_coverage: true**; call `crawl` and run LLM schema extraction; then **merge** (prefer concrete numeric fields from either).
 
 **Merging strategy:**
 
@@ -350,7 +350,7 @@ weight_g (number), battery_life (string/number?)
 
   * RAM/storage to **GB**, battery to **Wh** (or **mAh** for phones, keep both fields), screen to **inches**, weight to **kg**, refresh to **Hz**.
 * **Currency**: 3-letter ISO (EUR, USD, GBP).
-* **Null policy**: absent or unknown → `null` (never invent).
+* **Null policy**: absent or unknown -> `null` (never invent).
 * **Date parsing**: ISO-8601.
 * **Sanity checks** (drop outliers unless confirmed by ≥2 sources):
 

@@ -138,7 +138,7 @@ You can check some demo projects (check TAVILY_EXPLORATION.md for comments):
 
 **Remember:**
 
-* **Explain → Propose → Ask approval** for every step.
+* **Explain -> Propose -> Ask approval** for every step.
 * **Small, testable chunks** only.
 * Keep `TASKS.md` and `/docs` current.
 * Write CLAUDE.md

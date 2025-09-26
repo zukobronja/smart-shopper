@@ -6,7 +6,7 @@ SmartShopper helps users find the **best products, prices, and deals** by combin
 
 ## 1. Product Scope
 
-**Core Value:** Search for a category (e.g., *“best laptops under €1,000 for programming”*) → get a **ranked, explainable shortlist** with specs, prices, value assessment, sources, and optional alerts on price drops.
+**Core Value:** Search for a category (e.g., *“best laptops under €1,000 for programming”*) -> get a **ranked, explainable shortlist** with specs, prices, value assessment, sources, and optional alerts on price drops.
 
 **Primary Users:** Consumers who want **reliable, current, cross-site comparisons and deal alerts**.
 
@@ -21,10 +21,10 @@ Frontend (React + Tailwind + shadcn/ui + Recharts)
 Backend API (FastAPI, Python)
         │  ┌───────────────────────────────────────────────────────────────┐
         │  │   LangGraph Multi-Agent Pipeline                              │
-        │  │   Orchestrator → Source Planner → Retrievers (Whitelist/Tavily)│
-        │  │   → Credibility Filter → Entity Resolver → Spec Extractor      │
-        │  │   → Reviews & Sentiment → Price Aggregator → Ranker            │
-        │  │   → Persistence → Exporter/Notifier                            │
+        │  │   Orchestrator -> Source Planner -> Retrievers (Whitelist/Tavily)│
+        │  │   -> Credibility Filter -> Entity Resolver -> Spec Extractor      │
+        │  │   -> Reviews & Sentiment -> Price Aggregator -> Ranker            │
+        │  │   -> Persistence -> Exporter/Notifier                            │
         │  └───────────────────────────────────────────────────────────────┘
         │
         ▼
@@ -87,17 +87,17 @@ MongoDB Atlas (DB + Atlas Search + Vector Search)
 
 ## 4. LangGraph Multi-Agent Pipeline
 
-1. **Orchestrator** – parse user query → normalized intent string (category, budget, constraints, priorities).
+1. **Orchestrator** – parse user query -> normalized intent string (category, budget, constraints, priorities).
 2. **Source Planner** – hybrid: whitelist + Tavily discovery when needed.
 3. **Retriever** –
 
    * WhitelistRetriever: CSS/XPath parsing.
-   * TavilyRetriever: `search` → `map` → `extract` (preferred) → `crawl` (fallback).
+   * TavilyRetriever: `search` -> `map` -> `extract` (preferred) -> `crawl` (fallback).
 4. **Credibility Filter** – domain rep, recency, extractability, consensus, affiliate penalty.
 5. **Entity Resolver** – canonicalize brand/model/SKU, alias mapping.
 6. **Spec Extractor** – schema-based JSON extraction (LLM fallback).
 7. **Reviews & Sentiment Agent** – pros, cons, sentiment, contradictions.
-8. **Price Aggregator** – listings + RSS → current price, recent best, floor/ceiling.
+8. **Price Aggregator** – listings + RSS -> current price, recent best, floor/ceiling.
 9. **Ranker/Recommender** – weighted score of specs, sentiment, price, availability.
 10. **Persistence** – store run, outputs, costs.
 11. **Exporter/Notifier** – create exports, trigger alerts.
@@ -114,10 +114,10 @@ Score = 0.35*SpecFitness + 0.25*Sentiment + 0.30*PriceValue + 0.05*Availability 
 
 **Workflow:**
 
-* `search` → candidate URLs (domain/recency filters).
-* `map` → triage pages, drop low-signal.
-* `extract` → structured data (preferred).
-* `crawl` + LLM schema → fallback if `extract` fails.
+* `search` -> candidate URLs (domain/recency filters).
+* `map` -> triage pages, drop low-signal.
+* `extract` -> structured data (preferred).
+* `crawl` + LLM schema -> fallback if `extract` fails.
 
 **Schemas:**
 
@@ -167,7 +167,7 @@ Score = 0.35*SpecFitness + 0.25*Sentiment + 0.30*PriceValue + 0.05*Availability 
 
 ## 7. RSS Pipeline
 
-* Ingest every 5–10 min: parse → normalize → resolve product ID → upsert.
+* Ingest every 5–10 min: parse -> normalize -> resolve product ID -> upsert.
 * Dedupe by `(title|price|domain)` hash.
 * Append matched prices to `price_history`.
 * Join RSS + listings at query time for value analysis.
@@ -247,7 +247,7 @@ Score = 0.35*SpecFitness + 0.25*Sentiment + 0.30*PriceValue + 0.05*Availability 
 
 * **Performance:**
 
-  * Titles/spec strings are short → MiniLM runs well on CPU.
+  * Titles/spec strings are short -> MiniLM runs well on CPU.
   * Cache query embeddings for repeat searches.
   * Monitor precision\@3 vs OpenAI baseline.
 
@@ -285,7 +285,7 @@ Score = 0.35*SpecFitness + 0.25*Sentiment + 0.30*PriceValue + 0.05*Availability 
 
 * **Backend**: FastAPI on AWS Elastic Beanstalk.
 * **DB**: MongoDB Atlas (vector search enabled).
-* **Frontend**: React → AWS Amplify or S3+CloudFront.
+* **Frontend**: React -> AWS Amplify or S3+CloudFront.
 * **Workers**: RSS ingest + alert evaluator.
 * **Secrets**: stored as AWS EB environment vars.
 * **Email**: SES or SendGrid.
@@ -316,7 +316,7 @@ Score = 0.35*SpecFitness + 0.25*Sentiment + 0.30*PriceValue + 0.05*Availability 
 ## 16. Definition of Done (MVP)
 
 * User login (Google/email).
-* Query → ranked product list with specs, prices, sentiment, sources.
+* Query -> ranked product list with specs, prices, sentiment, sources.
 * Product detail with price history.
 * Watches + notifications (email/Discord).
 * RSS + Tavily integration running.

@@ -1,8 +1,8 @@
-# 🐳 SmartShopper Docker Guide
+# SmartShopper Docker Guide
 
 Quick guide for containerized development and deployment of SmartShopper.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Environment Setup
 ```bash
@@ -40,7 +40,7 @@ docker-compose -f docker-compose.local.yml --profile frontend-dev up --build
 # Frontend: http://localhost:3000 (with hot reload)
 ```
 
-## 🏗️ Build Commands
+## Build Commands
 
 ### Quick Deployment (Recommended)
 ```bash
@@ -66,7 +66,7 @@ docker-compose -f docker-compose.dev.yml up --build
 docker-compose up --build
 ```
 
-## 📁 File Structure
+## File Structure
 
 ```
 smartshopper/
@@ -79,7 +79,7 @@ smartshopper/
 └── .ebextensions/             # AWS Elastic Beanstalk config
 ```
 
-## 🌐 Deployment Scenarios
+## Deployment Scenarios
 
 ### Local Development
 - **Atlas + Hot Reload**: `docker-compose.dev.yml`
@@ -91,7 +91,7 @@ smartshopper/
 - **AWS Elastic Beanstalk**: `Dockerfile` + `.ebextensions/`
 - **Kubernetes**: Use production `Dockerfile`
 
-## 💡 Pro Tips
+## Pro Tips
 
 ### Development Workflow
 ```bash
@@ -118,7 +118,7 @@ docker-compose -f docker-compose.dev.yml down -v
 - **Local MongoDB**: Good for offline work, testing migrations
 - **In-Memory**: For unit tests only
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Critical: Embeddings Configuration
 **For Docker deployment, use OpenAI embeddings to avoid permission issues:**
@@ -154,7 +154,7 @@ docker-compose build --no-cache
 - Frontend Dev: Default 3000 (change in docker-compose)
 - MongoDB: Default 27017 (change in docker-compose)
 
-## 📊 Performance Notes
+## Performance Notes
 
 ### Build Times
 - **First Build**: 3-5 minutes (downloads dependencies)
@@ -172,7 +172,7 @@ docker-compose build --no-cache
 - Layer caching optimizes rebuild times
 - Non-root user improves security
 
-## 🏷️ Version Management
+## Version Management
 
 ### Smart Semantic Versioning
 SmartShopper uses Git-based semantic versioning instead of timestamp chaos:
@@ -194,7 +194,7 @@ SmartShopper uses Git-based semantic versioning instead of timestamp chaos:
 - **Local development**: `v0.0.0-dev.0.local-dirty`
 
 ### Benefits vs Timestamp Versioning
-- ✅ **Semantic meaning**: Know what changed (patch/minor/major)
-- ✅ **No junk images**: Clean version progression
-- ✅ **Git integration**: Automatic versioning from repository state
-- ✅ **Production ready**: Clear release vs development builds
+- **Semantic meaning**: Know what changed (patch/minor/major)
+- **No junk images**: Clean version progression
+- **Git integration**: Automatic versioning from repository state
+- **Production ready**: Clear release vs development builds

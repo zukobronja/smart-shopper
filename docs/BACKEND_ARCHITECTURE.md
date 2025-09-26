@@ -9,9 +9,9 @@ SmartShopper backend is designed as a **Tavily-first** product search platform u
 ## Architecture Principles
 
 ### 1. Tavily-First Strategy
-- **Primary Data Source**: Tavily Search → Extract pipeline
+- **Primary Data Source**: Tavily Search -> Extract pipeline
 - **Fallback Strategy**: Crawl only when extract coverage < 60%
-- **Cost Optimization**: Two-step process (search → extract) vs single-step
+- **Cost Optimization**: Two-step process (search -> extract) vs single-step
 - **Quality Assurance**: Domain credibility scoring + coverage validation
 
 ### 2. Clean Agent Separation
@@ -126,7 +126,7 @@ SmartShopper backend is designed as a **Tavily-first** product search platform u
 - **Embedding Strategy**: Dual vectors per item—`summary_vec_openai_1536` and `summary_vec_minilm_384`—mirroring product embeddings. Background jobs generate/update embeddings as part of ingestion.
 - **MongoDB Indexing**: Create dedicated Atlas vector indexes (`rss_summary_openai_idx`, `rss_summary_minilm_idx`). Apply recency/category filters in the query to keep results tight.
 - **Parallel Query Flow**:
-  1. Receive user query → QueryOrchestrator emits Tavily parameters and a text embedding job.
+  1. Receive user query -> QueryOrchestrator emits Tavily parameters and a text embedding job.
   2. In parallel: (a) TavilyRetriever runs live search/extraction; (b) vector search against `rss_items` using the same query embedding.
   3. Merge results—prioritize Tavily hits for new content, inject RSS items ranked by vector similarity + freshness, dedupe by product/link.
   4. ResultsRankerAgent or a merge policy surfaces RSS items as “latest deal/review” cards alongside Tavily findings.
@@ -153,7 +153,7 @@ The RSS vector retrieval functionality requires two Atlas Search vector indexes 
 #### Setup Using MongoDB Compass (Recommended)
 
 1. **Connect MongoDB Compass to your Atlas cluster**
-2. **Navigate to the collection**: `smartshopper` database → `rss_items` collection
+2. **Navigate to the collection**: `smartshopper` database -> `rss_items` collection
 3. **Go to Search Indexes tab**
 4. **Click "Create Search Index"**
 5. **Select "JSON Editor"** and use these definitions:
@@ -258,7 +258,7 @@ The RSS vector retrieval functionality requires two Atlas Search vector indexes 
 **Parallel Retrieval Flow**
 - `RetrievalSplitterNode` duplicates the orchestrated state for Tavily (live web) and RSS (vector-backed) branches.
 - `RSSVectorRetrieverAgent` queries MongoDB Atlas vector indexes while `RSSResultAdapter` normalizes hits back into the shared product schema.
-- Tavily branch runs `CredibilityFilterAgent` → `SpecExtractorAgent` → `TavilyResultAdapter` to produce aligned structured payloads.
+- Tavily branch runs `CredibilityFilterAgent` -> `SpecExtractorAgent` -> `TavilyResultAdapter` to produce aligned structured payloads.
 - `ResultFusionNode` merges both streams ahead of ranking and persistence so downstream layers stay agnostic to source.
 
 ### Agent 1: QueryOrchestratorAgent
@@ -409,19 +409,19 @@ final_rank = 0.4 * relevance_score +
 ```
 User Query
     ↓
-QueryOrchestratorAgent → search_params
+QueryOrchestratorAgent -> search_params
     ↓
-TavilyRetrieverAgent → raw_results + extracted_content
+TavilyRetrieverAgent -> raw_results + extracted_content
     ↓  
-CredibilityFilterAgent → credibility_scored_results
+CredibilityFilterAgent -> credibility_scored_results
     ↓
-SpecExtractorAgent → structured_products
+SpecExtractorAgent -> structured_products
     ↓
-ResultsRankerAgent → ranked_product_list
+ResultsRankerAgent -> ranked_product_list
     ↓
-MongoDB Persistence → stored_results
+MongoDB Persistence -> stored_results
     ↓
-FastAPI Response → JSON to frontend
+FastAPI Response -> JSON to frontend
 ```
 
 ## State Management

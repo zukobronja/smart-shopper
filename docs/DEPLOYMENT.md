@@ -1,8 +1,8 @@
-# 🚀 SmartShopper Deployment Guide
+# SmartShopper Deployment Guide
 
 Complete production-ready deployment guide for SmartShopper on AWS Elastic Beanstalk with MongoDB Atlas.
 
-## 📋 Prerequisites
+## Prerequisites
 
 ### 1. Required Tools
 ```bash
@@ -61,7 +61,7 @@ EMBEDDINGS_PROVIDER=openai
 EMAIL_PROVIDER=console
 ```
 
-## 🏗️ Deployment Architecture
+## Deployment Architecture
 
 ### Single Container Strategy
 SmartShopper uses a **production-optimized single container** approach:
@@ -78,7 +78,7 @@ SmartShopper uses a **production-optimized single container** approach:
 - **Monitoring**: CloudWatch logs and metrics
 - **Auto Scaling**: 1-4 instances based on load
 
-## 🐳 Docker Configuration
+## Docker Configuration
 
 ### Multi-Stage Dockerfile
 The production `Dockerfile` includes:
@@ -118,7 +118,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT} --workers 1 --loop uvloop"]
 ```
 
-## 🚀 Quick Deploy (Automated)
+## Quick Deploy (Automated)
 
 ### 1. Build and Test Locally
 ```bash
@@ -144,7 +144,7 @@ This script performs:
 ./scripts/deploy.sh
 ```
 
-## 🌍 Manual AWS Elastic Beanstalk Setup
+## Manual AWS Elastic Beanstalk Setup
 
 ### 1. Initialize EB Application
 ```bash
@@ -159,8 +159,8 @@ eb create smartshopper-production --instance-type t3.small --enable-spot
 
 #### Option A: AWS Console (Recommended)
 1. Go to [AWS Elastic Beanstalk Console](https://console.aws.amazon.com/elasticbeanstalk/)
-2. Select **smartshopper** → **smartshopper-production**
-3. **Configuration** → **Software** → **Edit**
+2. Select **smartshopper** -> **smartshopper-production**
+3. **Configuration** -> **Software** -> **Edit**
 4. Add environment properties:
 
 ```
@@ -201,7 +201,7 @@ eb logs
 eb open
 ```
 
-## 📊 MongoDB Atlas Configuration
+## MongoDB Atlas Configuration
 
 ### 1. Database Setup
 - Create MongoDB Atlas cluster (M10+ recommended for production)
@@ -254,7 +254,7 @@ Create two Atlas Search vector indexes for RSS semantic search:
 # Add 0.0.0.0/0 to Atlas IP access list
 ```
 
-## 🔧 Production Configuration
+## Production Configuration
 
 ### AWS EB Extensions
 The `.ebextensions/` directory contains production configurations:
@@ -296,7 +296,7 @@ option_settings:
 }
 ```
 
-## 🔐 Security Configuration
+## Security Configuration
 
 ### Application Security
 - **JWT Secure Cookies**: HttpOnly, Secure flags enabled
@@ -313,13 +313,13 @@ option_settings:
 5. Add authorized redirect URI: `https://your-eb-domain.com/auth/google/callback`
 
 ### Production Secrets Checklist
-- ✅ Strong JWT secret (32+ characters)
-- ✅ MongoDB Atlas user with minimal permissions
-- ✅ Google OAuth credentials for production domain
-- ✅ API keys (OpenAI, Tavily) with usage limits
-- ✅ Environment variables (never in code)
+- Strong JWT secret (32+ characters)
+- MongoDB Atlas user with minimal permissions
+- Google OAuth credentials for production domain
+- API keys (OpenAI, Tavily) with usage limits
+- Environment variables (never in code)
 
-## 📈 Monitoring and Health Checks
+## Monitoring and Health Checks
 
 ### Health Endpoints
 ```bash
@@ -345,7 +345,7 @@ curl https://your-domain.com/v1/health/workflow
 - **Frontend load**: < 3s initial page load
 - **Availability**: 99.9% uptime target
 
-## 🔄 Deployment Operations
+## Deployment Operations
 
 ### Routine Deployments
 ```bash
@@ -384,7 +384,7 @@ eb deploy --version <version-label>
 eb abort
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Deployment Issues
 
@@ -455,7 +455,7 @@ eb scale 1
 curl https://your-domain.com/health
 ```
 
-## 💰 Cost Optimization
+## Cost Optimization
 
 ### Resource Optimization
 - **Instance Type**: Start with t3.small, scale as needed
@@ -479,30 +479,30 @@ aws budgets create-budget --budget file://budget.json
 # - MongoDB Atlas metrics
 ```
 
-## 🎯 Production Checklist
+## Production Checklist
 
 ### Pre-Deployment
-- ✅ Environment variables configured
-- ✅ MongoDB Atlas vector indexes created
-- ✅ Google OAuth production URLs set
-- ✅ Local build and test passed
-- ✅ AWS credentials configured
+- Environment variables configured
+- MongoDB Atlas vector indexes created
+- Google OAuth production URLs set
+- Local build and test passed
+- AWS credentials configured
 
 ### Post-Deployment
-- ✅ Health endpoints responding
-- ✅ Search functionality working
-- ✅ User authentication working
-- ✅ CloudWatch logs flowing
-- ✅ Performance metrics normal
+- Health endpoints responding
+- Search functionality working
+- User authentication working
+- CloudWatch logs flowing
+- Performance metrics normal
 
 ### Ongoing Maintenance
-- ✅ Monitor application logs
-- ✅ Track API usage and costs
-- ✅ Update dependencies regularly
-- ✅ Review security settings
-- ✅ Backup MongoDB data
+- Monitor application logs
+- Track API usage and costs
+- Update dependencies regularly
+- Review security settings
+- Backup MongoDB data
 
-## 📞 Support and Resources
+## Support and Resources
 
 ### Documentation
 - **AWS EB**: https://docs.aws.amazon.com/elasticbeanstalk/
@@ -532,15 +532,15 @@ eb ssh
 
 ---
 
-## 🎉 Success!
+## Success!
 
 Your SmartShopper application is now running in production with:
 
-- ✅ **High Availability**: Auto-scaling load-balanced deployment
-- ✅ **Security**: Hardened container with secure secret management
-- ✅ **Monitoring**: CloudWatch integration with health checks
-- ✅ **Performance**: Optimized Docker build and efficient runtime
-- ✅ **Scalability**: Auto-scaling from 1-4 instances based on load
+- **High Availability**: Auto-scaling load-balanced deployment
+- **Security**: Hardened container with secure secret management
+- **Monitoring**: CloudWatch integration with health checks
+- **Performance**: Optimized Docker build and efficient runtime
+- **Scalability**: Auto-scaling from 1-4 instances based on load
 
 **Application URL**: Access via `eb open` or your custom domain
 

@@ -1,8 +1,8 @@
-# 🚀 SmartShopper Production Deployment Guide
+# SmartShopper Production Deployment Guide
 
 Complete guide for deploying SmartShopper to AWS Elastic Beanstalk.
 
-## 📋 Prerequisites
+## Prerequisites
 
 ### 1. Required Tools
 ```bash
@@ -61,7 +61,7 @@ EMBEDDINGS_PROVIDER=openai
 EMAIL_PROVIDER=console
 ```
 
-## 🏗️ Build and Test
+## Build and Test
 
 ### 1. Local Build Test
 ```bash
@@ -89,7 +89,7 @@ curl http://localhost:8000/v1/health
 curl http://localhost:8000/
 ```
 
-## 🌍 AWS Elastic Beanstalk Deployment
+## AWS Elastic Beanstalk Deployment
 
 ### 1. Initialize EB Application
 ```bash
@@ -105,8 +105,8 @@ eb create smartshopper-production --instance-type t3.small
 
 #### Option A: AWS Console (Recommended)
 1. Go to [AWS Elastic Beanstalk Console](https://console.aws.amazon.com/elasticbeanstalk/)
-2. Select your application → Environment
-3. **Configuration** → **Software** → **Edit**
+2. Select your application -> Environment
+3. **Configuration** -> **Software** -> **Edit**
 4. Add environment properties:
 
 ```
@@ -155,7 +155,7 @@ eb logs
 eb open
 ```
 
-## 🔧 Production Configuration
+## Production Configuration
 
 ### 1. Security Settings
 The application includes production-ready security:
@@ -186,7 +186,7 @@ aws:elasticbeanstalk:cloudwatch:logs:
   RetentionInDays: 7
 ```
 
-## 📊 MongoDB Atlas Setup
+## MongoDB Atlas Setup
 
 ### 1. Vector Search Indexes
 Create required indexes for RSS vector search:
@@ -229,7 +229,7 @@ Create required indexes for RSS vector search:
 - Add EB environment IP ranges to Atlas IP whitelist
 - Or use `0.0.0.0/0` for all IPs (less secure)
 
-## 🔄 CI/CD Pipeline (Optional)
+## CI/CD Pipeline (Optional)
 
 ### GitHub Actions Example
 ```yaml
@@ -259,7 +259,7 @@ jobs:
           eb deploy --label ${GITHUB_SHA:0:7}
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -317,7 +317,7 @@ eb scale 2
 eb terminate
 ```
 
-## 📈 Monitoring
+## Monitoring
 
 ### Application Metrics
 - Health endpoint: `/health`
@@ -335,17 +335,17 @@ eb terminate
 - Monitor Tavily API usage
 - Track OpenAI costs
 
-## 🔐 Security Checklist
+## Security Checklist
 
-- ✅ Environment variables in EB (not in code)
-- ✅ JWT secure cookies with strong secret
-- ✅ CORS properly configured
-- ✅ Non-root container user
-- ✅ MongoDB connection encrypted
-- ✅ API keys properly secured
-- ✅ Regular dependency updates
+- Environment variables in EB (not in code)
+- JWT secure cookies with strong secret
+- CORS properly configured
+- Non-root container user
+- MongoDB connection encrypted
+- API keys properly secured
+- Regular dependency updates
 
-## 🎯 Performance Targets
+## Performance Targets
 
 ### Response Times
 - Health endpoints: < 100ms
@@ -357,7 +357,7 @@ eb terminate
 - Auto-scaling: 1-4 instances
 - Health check grace period: 5s
 
-## 📞 Support
+## Support
 
 ### Getting Help
 - AWS EB Documentation: https://docs.aws.amazon.com/elasticbeanstalk/
@@ -378,4 +378,4 @@ curl https://your-domain.com/health
 
 ---
 
-**🎉 Congratulations!** Your SmartShopper application is now running in production on AWS Elastic Beanstalk with MongoDB Atlas.
+**Congratulations!** Your SmartShopper application is now running in production on AWS Elastic Beanstalk with MongoDB Atlas.
