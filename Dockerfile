@@ -106,17 +106,16 @@ COPY backend ./backend
 RUN mkdir -p backend/app/static
 COPY --from=frontend-builder /app/frontend/dist/ ./backend/app/static/
 
-# Create startup script for environment variable substitution
-RUN echo '#!/bin/bash' > /app/startup.sh && \
-    echo '# Replace placeholder with actual environment variable in built frontend files' >> /app/startup.sh && \
-    echo 'if [ ! -z "$VITE_API_BASE_URL" ]; then' >> /app/startup.sh && \
-    echo '    echo "Configuring frontend with VITE_API_BASE_URL: $VITE_API_BASE_URL"' >> /app/startup.sh && \
-    echo '    find /app/backend/app/static -type f -name "*.js" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;' >> /app/startup.sh && \
-    echo '    find /app/backend/app/static -type f -name "*.html" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;' >> /app/startup.sh && \
-    echo 'fi' >> /app/startup.sh && \
-    echo '# Start the application' >> /app/startup.sh && \
-    echo 'exec "$@"' >> /app/startup.sh && \
-    chmod +x /app/startup.sh
+# Create startup script that replaces API URL placeholder at runtime
+RUN printf '#!/bin/bash\n\
+# Replace placeholder with actual environment variable in built frontend files\n\
+if [ ! -z "$VITE_API_BASE_URL" ]; then\n\
+    echo "Configuring frontend with VITE_API_BASE_URL: $VITE_API_BASE_URL"\n\
+    find /app/backend/app/static -type f -name "*.js" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \\;\n\
+    find /app/backend/app/static -type f -name "*.html" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \\;\n\
+fi\n\
+# Start the application\n\
+exec "$@"\n' > /app/startup.sh && chmod +x /app/startup.sh
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
@@ -131,6 +130,6 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Production-optimized uvicorn command with startup script
+# Use startup script as entrypoint to handle environment variable substitution
 ENTRYPOINT ["/app/startup.sh"]
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--loop", "uvloop", "--access-log", "--log-level", "info"]
