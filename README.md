@@ -201,7 +201,7 @@ Score = 0.35*SpecFitness + 0.25*Sentiment + 0.30*PriceValue + 0.05*Availability 
 - **Secure Authentication**: Google OAuth integration with JWT session management
 - **Professional UI**: Glass morphism design with backdrop filters and smooth animations
 
-![My Favorites](images/smartsphoper-myfavotites.png)
+![My Favorites](images/smartshoper-myfavorites.png)
 
 ## Quick Start
 
