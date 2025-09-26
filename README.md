@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="images/smart-shopper-logo.png" alt="SmartShopper Logo" width="200"/>
+</div>
+
 # SmartShopper
 
 **AI-Powered Product Search and Comparison Platform**
