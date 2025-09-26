@@ -15,9 +15,8 @@ RUN npm ci --no-audit --no-fund
 # Copy source code
 COPY frontend/ ./
 
-# Set production API URL for EB deployment (updated to current URL)
-ENV VITE_API_BASE_URL=http://smartshopper-env.eba-pckszain.eu-central-1.elasticbeanstalk.com
-# ENV VITE_API_BASE_URL=http://localhost:8000
+# Build frontend with placeholder - will be replaced at runtime
+ENV VITE_API_BASE_URL=__VITE_API_BASE_URL_PLACEHOLDER__
 RUN echo "Building frontend with VITE_API_BASE_URL=${VITE_API_BASE_URL}" && npm run build
 
 # Stage 2: Production Backend - Lightweight Python Runtime
@@ -107,6 +106,20 @@ COPY backend ./backend
 RUN mkdir -p backend/app/static
 COPY --from=frontend-builder /app/frontend/dist/ ./backend/app/static/
 
+# Create startup script for environment variable substitution
+RUN cat > /app/startup.sh << 'EOF'
+#!/bin/bash
+# Replace placeholder with actual environment variable in built frontend files
+if [ ! -z "$VITE_API_BASE_URL" ]; then
+    echo "Configuring frontend with VITE_API_BASE_URL: $VITE_API_BASE_URL"
+    find /app/backend/app/static -type f -name "*.js" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;
+    find /app/backend/app/static -type f -name "*.html" -exec sed -i "s|__VITE_API_BASE_URL_PLACEHOLDER__|$VITE_API_BASE_URL|g" {} \;
+fi
+# Start the application
+exec "$@"
+EOF
+RUN chmod +x /app/startup.sh
+
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
 
@@ -120,5 +133,6 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Production-optimized uvicorn command
+# Production-optimized uvicorn command with startup script
+ENTRYPOINT ["/app/startup.sh"]
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--loop", "uvloop", "--access-log", "--log-level", "info"]
