@@ -224,6 +224,6 @@ if __name__ == "__main__":
         print(f"Extracted: {price} {currency}")
         assert price == 1299.99
         assert currency == "EUR"
-        print("✅ Quick test passed!")
+        print("Quick test passed!")
     
     asyncio.run(quick_test())

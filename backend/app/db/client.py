@@ -38,10 +38,10 @@ async def connect_to_mongo():
         
         # Test connection with ping
         await mongo_client.client.admin.command('ping')
-        logger.info("✅ MongoDB connection successful using certifi CA bundle")
+        logger.info(" MongoDB connection successful using certifi CA bundle")
         
     except Exception as e:
-        logger.error(f"❌ MongoDB connection failed: {e}")
+        logger.error(f" MongoDB connection failed: {e}")
         # Log the MongoDB URL pattern (without credentials) for debugging
         url_pattern = settings.mongodb_url.split('@')[1] if '@' in settings.mongodb_url else settings.mongodb_url
         logger.error(f"Connection URL pattern: mongodb://***@{url_pattern}")

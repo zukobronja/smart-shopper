@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Real Pipeline Integration Test: QueryOrchestrator → TavilyRetriever → CredibilityFilter
+Real Pipeline Integration Test: QueryOrchestrator -> TavilyRetriever -> CredibilityFilter
 
 Tests the complete pipeline flow with real API calls to verify:
 1. QueryOrchestrator produces proper search_query
@@ -29,25 +29,25 @@ from app.agents.state import create_initial_state, get_state_summary
 
 def check_api_keys():
     """Check if required API keys are available"""
-    print("🔑 Checking API Keys...")
+    print("Checking API Keys...")
     
-    openai_key = "✅ Set" if settings.OPENAI_API_KEY else "❌ Missing"
-    tavily_key = "✅ Set" if settings.TAVILY_API_KEY else "❌ Missing"
+    openai_key = "Set" if settings.OPENAI_API_KEY else "Missing"
+    tavily_key = "Set" if settings.TAVILY_API_KEY else "Missing"
     
     print(f"   OPENAI_API_KEY: {openai_key}")
     print(f"   TAVILY_API_KEY: {tavily_key}")
     
     if not settings.OPENAI_API_KEY or not settings.TAVILY_API_KEY:
-        print("\n❌ Missing required API keys!")
+        print("\nMissing required API keys!")
         return False
     
-    print("✅ All API keys configured")
+    print("All API keys configured")
     return True
 
 
 async def test_three_agent_pipeline():
-    """Test QueryOrchestrator → TavilyRetriever → CredibilityFilter pipeline"""
-    print("\n🧪 Testing 3-Agent Pipeline Integration")
+    """Test QueryOrchestrator -> TavilyRetriever -> CredibilityFilter pipeline"""
+    print("\nTesting 3-Agent Pipeline Integration")
     print("=" * 60)
     
     # Initialize agents
@@ -55,35 +55,35 @@ async def test_three_agent_pipeline():
     tavily_agent = TavilyRetrieverAgent()
     credibility_agent = CredibilityFilterAgent()
     
-    print("✅ Agents initialized")
+    print("Agents initialized")
     
     # Test with a typical product search query
     test_query = "best wireless earbuds under $150"
-    print(f"\n🔍 Testing Query: '{test_query}'")
+    print(f"\n Testing Query: '{test_query}'")
     
     # Create initial state
     state = create_initial_state(test_query, "pipeline_integration_test")
-    print(f"📋 Initial state created")
+    print(f" Initial state created")
     
     try:
         # Step 1: QueryOrchestrator
-        print("\n1️⃣ QueryOrchestrator Processing...")
+        print("\n1. QueryOrchestrator Processing...")
         start_time = datetime.now()
         state = await query_agent.process(state)
         query_time = (datetime.now() - start_time).total_seconds()
         
         search_query = state.get("search_query")
         if not search_query:
-            print("❌ QueryOrchestrator failed")
+            print("QueryOrchestrator failed")
             return False
             
-        print(f"✅ Query parsed ({query_time:.2f}s)")
+        print(f" Query parsed ({query_time:.2f}s)")
         print(f"   Intent: {search_query.intent}")
         print(f"   Category: {search_query.category}")
         print(f"   Budget: ${search_query.budget_max}" if search_query.budget_max else "   Budget: None")
         
         # Step 2: TavilyRetriever  
-        print("\n2️⃣ TavilyRetriever Processing...")
+        print("\n2. TavilyRetriever Processing...")
         start_time = datetime.now()
         state = await tavily_agent.process(state)
         tavily_time = (datetime.now() - start_time).total_seconds()
@@ -92,23 +92,23 @@ async def test_three_agent_pipeline():
         extracted_content = state.get("extracted_content", [])
         
         if not raw_results:
-            print("❌ TavilyRetriever failed - no results")
+            print("TavilyRetriever failed - no results")
             return False
             
-        print(f"✅ Tavily search completed ({tavily_time:.2f}s)")
+        print(f" Tavily search completed ({tavily_time:.2f}s)")
         print(f"   Search results: {len(raw_results)}")
         print(f"   Extracted content: {len(extracted_content)}")
         print(f"   Coverage score: {state.get('coverage_score', 0.0):.2f}")
         
         # Step 3: CredibilityFilter
-        print("\n3️⃣ CredibilityFilter Processing...")
+        print("\n3. CredibilityFilter Processing...")
         start_time = datetime.now()
         state = await credibility_agent.process(state)
         credibility_time = (datetime.now() - start_time).total_seconds()
         
         filtered_results = state.get("credibility_filtered_results", [])
         
-        print(f"✅ Credibility filtering completed ({credibility_time:.2f}s)")
+        print(f" Credibility filtering completed ({credibility_time:.2f}s)")
         print(f"   Filtered results: {len(filtered_results)}")
         
         if filtered_results:
@@ -120,7 +120,7 @@ async def test_three_agent_pipeline():
             
             # Show top result details
             top_result = filtered_results[0]
-            print(f"\n🏆 Top Result:")
+            print(f"\n Top Result:")
             print(f"   URL: {top_result.get('url', 'No URL')[:60]}...")
             print(f"   Title: {top_result.get('title', 'No title')[:50]}...")
             print(f"   Score: {top_result.get('credibility_score', 0):.3f}")
@@ -136,16 +136,16 @@ async def test_three_agent_pipeline():
         total_time = query_time + tavily_time + credibility_time
         summary = get_state_summary(state)
         
-        print(f"\n📊 Pipeline Summary:")
+        print(f"\n Pipeline Summary:")
         print(f"   Total time: {total_time:.2f}s")
         print(f"   Agents executed: {summary['progress']['agents_completed']}")
         print(f"   Total cost: ${summary['progress']['total_cost_usd']:.4f}")
-        print(f"   Results: {len(raw_results)} → {len(filtered_results)} (filtered)")
+        print(f"   Results: {len(raw_results)} -> {len(filtered_results)} (filtered)")
         
         return True
         
     except Exception as e:
-        print(f"❌ Pipeline error: {e}")
+        print(f" Pipeline error: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -153,7 +153,7 @@ async def test_three_agent_pipeline():
 
 async def test_multiple_queries():
     """Test pipeline with different query types"""
-    print("\n🎯 Testing Multiple Query Types")
+    print("\nTesting Multiple Query Types")
     print("=" * 60)
     
     test_queries = [
@@ -200,9 +200,9 @@ async def test_multiple_queries():
             category_match = search_query.category == test_case["expected_category"]
             has_results = len(filtered_results) > 0
             
-            print(f"   Intent: {search_query.intent} {'✅' if intent_match else '❌'}")
-            print(f"   Category: {search_query.category} {'✅' if category_match else '❌'}")
-            print(f"   Filtered results: {len(filtered_results)} {'✅' if has_results else '❌'}")
+            print(f"   Intent: {search_query.intent} {'' if intent_match else ''}")
+            print(f"   Category: {search_query.category} {'' if category_match else ''}")
+            print(f"   Filtered results: {len(filtered_results)} {'' if has_results else ''}")
             
             if filtered_results:
                 avg_score = sum(r.get("credibility_score", 0) for r in filtered_results) / len(filtered_results)
@@ -215,15 +215,15 @@ async def test_multiple_queries():
                 "results_count": len(filtered_results)
             })
             
-            print(f"   Status: {'✅ SUCCESS' if success else '❌ FAILED'}")
+            print(f"   Status: {' SUCCESS' if success else ' FAILED'}")
             
         except Exception as e:
-            print(f"   ❌ Error: {e}")
+            print(f"    Error: {e}")
             results.append({"query": test_case["query"], "success": False, "error": str(e)})
     
     # Summary
     successful = sum(1 for r in results if r.get("success", False))
-    print(f"\n📊 Multi-Query Results:")
+    print(f"\n Multi-Query Results:")
     print(f"   Success rate: {successful}/{len(results)} queries")
     
     return successful == len(results)
@@ -231,7 +231,7 @@ async def test_multiple_queries():
 
 async def main():
     """Run all pipeline integration tests"""
-    print("🚀 CredibilityFilter Pipeline Integration Tests")
+    print("CredibilityFilter Pipeline Integration Tests")
     print("=" * 70)
     print(f"Timestamp: {datetime.now().isoformat()}")
     
@@ -248,30 +248,30 @@ async def main():
         
         # Final results
         print("\n" + "=" * 70)
-        print("📋 INTEGRATION TEST RESULTS")
+        print("INTEGRATION TEST RESULTS")
         print("=" * 70)
         
-        print(f"🔧 3-Agent Pipeline: {'PASS' if pipeline_success else 'FAIL'}")
-        print(f"🎯 Multi-Query Tests: {'PASS' if multi_query_success else 'FAIL'}")
+        print(f" 3-Agent Pipeline: {'PASS' if pipeline_success else 'FAIL'}")
+        print(f" Multi-Query Tests: {'PASS' if multi_query_success else 'FAIL'}")
         
         overall_success = pipeline_success and multi_query_success
-        print(f"\n🏆 Overall Result: {'ALL TESTS PASSED' if overall_success else 'SOME TESTS FAILED'}")
+        print(f"\n Overall Result: {'ALL TESTS PASSED' if overall_success else 'SOME TESTS FAILED'}")
         
         if overall_success:
-            print("\n🎉 QueryOrchestrator → TavilyRetriever → CredibilityFilter pipeline is WORKING!")
-            print("✅ Real API integration functional")
-            print("✅ Multi-agent state management working")
-            print("✅ Credibility filtering operational")
-            print("✅ All query types handled correctly")
-            print("\n➡️ Ready to implement next agent: SpecExtractorAgent")
+            print("\nQueryOrchestrator -> TavilyRetriever -> CredibilityFilter pipeline is WORKING!")
+            print("Real API integration functional")
+            print("Multi-agent state management working")
+            print("Credibility filtering operational")
+            print("All query types handled correctly")
+            print("\nReady to implement next agent: SpecExtractorAgent")
         else:
-            print("\n⚠️ Some issues detected in pipeline integration")
+            print("\nSome issues detected in pipeline integration")
             print("Review the detailed output above for specific failures")
         
         return overall_success
         
     except Exception as e:
-        print(f"\n❌ Critical test failure: {e}")
+        print(f"\n Critical test failure: {e}")
         import traceback
         traceback.print_exc()
         return False

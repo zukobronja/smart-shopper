@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Real API Test for QueryOrchestratorAgent → TavilyRetrieverAgent
+Real API Test for QueryOrchestratorAgent -> TavilyRetrieverAgent
 Uses actual OpenAI and Tavily API keys for comprehensive integration testing
 """
 import asyncio
@@ -24,30 +24,30 @@ from app.agents.state import create_initial_state, get_state_summary
 
 def check_api_keys():
     """Check if required API keys are available"""
-    print("🔑 Checking API Keys...")
+    print("Checking API Keys...")
     
-    openai_key = "✅ Set" if settings.OPENAI_API_KEY else "❌ Missing"
-    tavily_key = "✅ Set" if settings.TAVILY_API_KEY else "❌ Missing"
+    openai_key = "Set" if settings.OPENAI_API_KEY else "Missing"
+    tavily_key = "Set" if settings.TAVILY_API_KEY else "Missing"
     
     print(f"   OPENAI_API_KEY: {openai_key}")
     print(f"   TAVILY_API_KEY: {tavily_key}")
     
     if not settings.OPENAI_API_KEY or not settings.TAVILY_API_KEY:
-        print("\n❌ Missing required API keys!")
+        print("\nMissing required API keys!")
         print("Please set OPENAI_API_KEY and TAVILY_API_KEY environment variables")
         return False
     
-    print("✅ All API keys configured")
+    print("All API keys configured")
     return True
 
 
 async def test_individual_agents():
     """Test each agent individually"""
-    print("\n🧪 Testing Individual Agents")
+    print("\nTesting Individual Agents")
     print("=" * 50)
     
     # Test QueryOrchestratorAgent
-    print("\n1️⃣ Testing QueryOrchestratorAgent...")
+    print("\n1. Testing QueryOrchestratorAgent...")
     query_agent = QueryOrchestratorAgent()
     
     test_state = create_initial_state(
@@ -61,26 +61,26 @@ async def test_individual_agents():
     
     if result_state.get("search_query"):
         search_query = result_state["search_query"]
-        print(f"✅ QueryOrchestrator SUCCESS ({query_time:.0f}ms)")
+        print(f"QueryOrchestrator SUCCESS ({query_time:.0f}ms)")
         print(f"   Intent: {search_query.intent}")
         print(f"   Category: {search_query.category}")
         print(f"   Budget max: {search_query.budget_max}")
         print(f"   Tavily params: {result_state.get('tavily_search_params', {})}")
     else:
-        print(f"❌ QueryOrchestrator FAILED")
+        print(f"QueryOrchestrator FAILED")
         return False
     
     # Test TavilyRetrieverAgent
-    print("\n2️⃣ Testing TavilyRetrieverAgent...")
+    print("\n2. Testing TavilyRetrieverAgent...")
     tavily_agent = TavilyRetrieverAgent()
     
     # Test configuration first
     config = await tavily_agent.test_configuration()
     if config.get('error'):
-        print(f"❌ TavilyRetriever configuration error: {config['error']}")
+        print(f"TavilyRetriever configuration error: {config['error']}")
         return False
     
-    print(f"✅ TavilyRetriever configuration OK")
+    print(f"TavilyRetriever configuration OK")
     print(f"   Client: {config.get('client_type')}")
     
     # Now test with real data from QueryOrchestrator
@@ -92,7 +92,7 @@ async def test_individual_agents():
     extracted_content = result_state.get("extracted_content", [])
     coverage_score = result_state.get("coverage_score", 0.0)
     
-    print(f"✅ TavilyRetriever SUCCESS ({tavily_time:.0f}ms)")
+    print(f"TavilyRetriever SUCCESS ({tavily_time:.0f}ms)")
     print(f"   Search results: {len(search_results)}")
     print(f"   Extracted content: {len(extracted_content)}")
     print(f"   Coverage score: {coverage_score:.2f}")
@@ -102,7 +102,7 @@ async def test_individual_agents():
 
 async def test_integration_scenarios():
     """Test different query scenarios end-to-end"""
-    print("\n🎯 Testing Integration Scenarios")
+    print("\nTesting Integration Scenarios")
     print("=" * 50)
     
     test_queries = [
@@ -129,7 +129,7 @@ async def test_integration_scenarios():
     results = []
     
     for i, test_case in enumerate(test_queries, 1):
-        print(f"\n{i}️⃣ Testing: '{test_case['query']}'")
+        print(f"\n{i}. Testing: '{test_case['query']}'")
         print("-" * 60)
         
         # Create state
@@ -146,7 +146,7 @@ async def test_integration_scenarios():
             
             search_query = state.get("search_query")
             if not search_query:
-                print(f"❌ Query parsing failed")
+                print(f"Query parsing failed")
                 results.append({"query": test_case["query"], "success": False})
                 continue
             
@@ -155,8 +155,8 @@ async def test_integration_scenarios():
             category_match = search_query.category == test_case["expected_category"]
             
             print(f"   Query Processing: {query_time*1000:.0f}ms")
-            print(f"   Intent: {search_query.intent} {'✅' if intent_match else '❌'}")
-            print(f"   Category: {search_query.category} {'✅' if category_match else '❌'}")
+            print(f"   Intent: {search_query.intent} {'' if intent_match else ''}")
+            print(f"   Category: {search_query.category} {'' if category_match else ''}")
             
             # Step 2: TavilyRetriever
             start_time = time.time()
@@ -176,7 +176,7 @@ async def test_integration_scenarios():
             agent_steps = state.get("agent_steps", [])
             all_successful = all(step.status == "success" for step in agent_steps)
             
-            print(f"   Agent execution: {'✅' if all_successful else '❌'} ({len(agent_steps)} steps)")
+            print(f"   Agent execution: {'' if all_successful else ''} ({len(agent_steps)} steps)")
             
             success = intent_match and category_match and all_successful and (len(search_results) > 0 or len(extracted_content) > 0)
             results.append({
@@ -189,10 +189,10 @@ async def test_integration_scenarios():
                 "coverage_score": coverage_score
             })
             
-            print(f"   Overall: {'✅ SUCCESS' if success else '❌ FAILED'}")
+            print(f"   Overall: {' SUCCESS' if success else ' FAILED'}")
             
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f" Error: {e}")
             results.append({"query": test_case["query"], "success": False, "error": str(e)})
     
     return results
@@ -200,7 +200,7 @@ async def test_integration_scenarios():
 
 async def test_performance_metrics():
     """Test performance and cost metrics"""
-    print("\n⚡ Performance & Cost Analysis")
+    print("\n Performance & Cost Analysis")
     print("=" * 50)
     
     query_agent = QueryOrchestratorAgent()
@@ -222,7 +222,7 @@ async def test_performance_metrics():
     summary = get_state_summary(state)
     agent_steps = state.get("agent_steps", [])
     
-    print(f"📊 Performance Metrics:")
+    print(f" Performance Metrics:")
     print(f"   Total pipeline time: {total_time*1000:.0f}ms")
     print(f"   Agents executed: {len(agent_steps)}")
     print(f"   Total cost: ${summary['progress']['total_cost_usd']:.4f}")
@@ -237,16 +237,16 @@ async def test_performance_metrics():
     performance_ok = total_time < 10.0  # Under 10 seconds
     cost_reasonable = summary['progress']['total_cost_usd'] < 0.10  # Under 10 cents
     
-    print(f"\n🎯 Performance Targets:")
-    print(f"   Speed target (<10s): {'✅' if performance_ok else '❌'} ({total_time:.1f}s)")
-    print(f"   Cost target (<$0.10): {'✅' if cost_reasonable else '❌'} (${summary['progress']['total_cost_usd']:.4f})")
+    print(f"\n Performance Targets:")
+    print(f"   Speed target (<10s): {'' if performance_ok else ''} ({total_time:.1f}s)")
+    print(f"   Cost target (<$0.10): {'' if cost_reasonable else ''} (${summary['progress']['total_cost_usd']:.4f})")
     
     return performance_ok and cost_reasonable
 
 
 async def main():
     """Run all real API tests"""
-    print("🚀 SmartShopper Real API Integration Tests")
+    print("SmartShopper Real API Integration Tests")
     print("=" * 60)
     print(f"Timestamp: {datetime.now().isoformat()}")
     
@@ -267,34 +267,34 @@ async def main():
         
         # Final summary
         print("\n" + "=" * 60)
-        print("📋 COMPREHENSIVE TEST RESULTS")
+        print("COMPREHENSIVE TEST RESULTS")
         print("=" * 60)
         
-        print(f"🔧 Individual Agents: {'PASS' if individual_success else 'FAIL'}")
-        print(f"🎯 Integration Scenarios: {'PASS' if scenario_success else 'FAIL'}")
+        print(f" Individual Agents: {'PASS' if individual_success else 'FAIL'}")
+        print(f" Integration Scenarios: {'PASS' if scenario_success else 'FAIL'}")
         successful_scenarios = sum(1 for r in scenario_results if r.get("success", False))
         print(f"   Success rate: {successful_scenarios}/{len(scenario_results)} scenarios")
         
-        print(f"⚡ Performance Metrics: {'PASS' if performance_success else 'FAIL'}")
+        print(f" Performance Metrics: {'PASS' if performance_success else 'FAIL'}")
         
         overall_success = individual_success and scenario_success and performance_success
-        print(f"\n🏆 Overall Result: {'ALL TESTS PASSED' if overall_success else 'SOME TESTS FAILED'}")
+        print(f"\n Overall Result: {'ALL TESTS PASSED' if overall_success else 'SOME TESTS FAILED'}")
         
         if overall_success:
-            print("\n🎉 QueryOrchestrator → TavilyRetriever integration is PRODUCTION READY!")
-            print("✅ Real API calls working perfectly")
-            print("✅ Agent chaining functional")
-            print("✅ Performance targets met")
-            print("✅ Error handling robust")
-            print("\n➡️ Ready to implement next agent: CredibilityFilterAgent")
+            print("\nQueryOrchestrator -> TavilyRetriever integration is PRODUCTION READY!")
+            print("Real API calls working perfectly")
+            print("Agent chaining functional")
+            print("Performance targets met")
+            print("Error handling robust")
+            print("\n Ready to implement next agent: CredibilityFilterAgent")
         else:
-            print("\n⚠️ Some issues detected in real API testing")
+            print("\n Some issues detected in real API testing")
             print("Review the detailed output above for specific failures")
         
         return overall_success
         
     except Exception as e:
-        print(f"\n❌ Critical test failure: {e}")
+        print(f"\n Critical test failure: {e}")
         import traceback
         traceback.print_exc()
         return False

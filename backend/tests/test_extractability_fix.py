@@ -51,7 +51,7 @@ def test_extractability_scoring():
         }
     ]
     
-    print("🧪 Testing Extractability Scoring Fix:")
+    print("Testing Extractability Scoring Fix:")
     print("=" * 50)
     
     all_passed = True
@@ -60,7 +60,7 @@ def test_extractability_scoring():
         score = agent._calculate_extractability_score(test_case["url"], test_case["lookup"])
         
         passed = test_case["expected_min"] <= score <= test_case["expected_max"]
-        status = "✅ PASS" if passed else "❌ FAIL"
+        status = "PASS" if passed else "FAIL"
         
         print(f"{status} {test_case['name']}: {score:.3f} (expected: {test_case['expected_min']:.1f}-{test_case['expected_max']:.1f})")
         
@@ -69,7 +69,7 @@ def test_extractability_scoring():
             content = test_case["lookup"][test_case["url"]].get("content", "")
             print(f"     Content: '{content[:100]}...' (length: {len(content)})")
     
-    print(f"\n🎯 Overall Result: {'ALL TESTS PASSED' if all_passed else 'SOME TESTS FAILED'}")
+    print(f"\nOverall Result: {'ALL TESTS PASSED' if all_passed else 'SOME TESTS FAILED'}")
     return all_passed
 
 if __name__ == "__main__":

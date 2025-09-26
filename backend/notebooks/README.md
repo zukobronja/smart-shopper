@@ -2,9 +2,9 @@
 
 This directory contains Jupyter notebooks for interactive development and testing of SmartShopper components.
 
-## 📚 Available Notebooks
+## Available Notebooks
 
-### Phase 4: LangGraph Implementation 🔄
+### Phase 4: LangGraph Implementation 
 **File**: `multi_agent_rag_langgraph_implementation.ipynb`
 
 **Purpose**: Interactive development and testing of the complete LangGraph pipeline for SmartShopper.
@@ -16,7 +16,7 @@ This directory contains Jupyter notebooks for interactive development and testin
 - Complete workflow testing and validation
 - API integration examples
 
-### Phase 4.1: Tavily Optimization ✅
+### Phase 4.1: Tavily Optimization 
 **File**: `simple_tavily_test.ipynb`
 
 **Purpose**: Comprehensive testing of the OptimizedTavilyClient with simplified setup and complete coverage.
@@ -42,7 +42,7 @@ This directory contains Jupyter notebooks for interactive development and testin
 4. Run cells sequentially to test components
 5. Modify and experiment with different queries and configurations
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python environment with SmartShopper dependencies
@@ -67,7 +67,7 @@ export OPENAI_API_KEY="sk-..."
 
 Without API keys, the notebooks will use mock data for testing.
 
-## 📋 Development Workflow
+## Development Workflow
 
 1. **Interactive Development** - Use notebooks to prototype and test new features
 2. **Validation** - Verify components work correctly with real data
@@ -75,7 +75,7 @@ Without API keys, the notebooks will use mock data for testing.
 4. **Code Extraction** - Move working code to production files
 5. **Documentation** - Update documentation with findings
 
-## 🔧 Features Demonstrated
+## Features Demonstrated
 
 ### Phase 4 Pipeline
 - **Query Orchestration** - Intelligent parsing and intent detection
@@ -92,7 +92,7 @@ Without API keys, the notebooks will use mock data for testing.
 - **Error Handling** - Graceful degradation testing
 - **Performance Analysis** - Cost and speed optimization
 
-## 📊 Example Queries for Testing
+## Example Queries for Testing
 
 ### For Tavily Testing (`simple_tavily_test.ipynb`)
 ```python
@@ -121,7 +121,7 @@ test_queries = [
 ]
 ```
 
-## 🎯 Next Steps
+## Next Steps
 
 After validating the pipeline in the notebook:
 1. Extract working code to production files
@@ -130,7 +130,7 @@ After validating the pipeline in the notebook:
 4. Integrate with FastAPI endpoints
 5. Deploy and monitor performance
 
-## 💡 Tips for Development
+## Tips for Development
 
 - **Start Simple** - Test with basic queries first
 - **Use Mock Data** - Don't waste API credits during development
@@ -138,7 +138,7 @@ After validating the pipeline in the notebook:
 - **Document Findings** - Note what works and what doesn't
 - **Cost Awareness** - Monitor API usage in live tests
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **Import Errors**: Make sure you're running Jupyter from the backend directory and the Python path is correct.
 
@@ -150,4 +150,4 @@ After validating the pipeline in the notebook:
 
 ---
 
-**Happy coding! 🚀**
+**Happy coding! **

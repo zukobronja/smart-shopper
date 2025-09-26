@@ -2,7 +2,7 @@
 Full 5-Agent Pipeline Integration Test
 
 Tests the complete SmartShopper pipeline end-to-end:
-QueryOrchestrator → TavilyRetriever → CredibilityFilter → SpecExtractor → ResultsRanker
+QueryOrchestrator -> TavilyRetriever -> CredibilityFilter -> SpecExtractor -> ResultsRanker
 
 This validates that:
 1. All agents work together seamlessly

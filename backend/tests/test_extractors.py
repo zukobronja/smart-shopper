@@ -59,7 +59,7 @@ class TestExtractors:
         for category in expected_categories:
             assert category in categories, f"Missing expected category: {category}"
         
-        print(f"✓ Golden URL registry has {len(golden_urls)} URLs across {len(categories)} categories")
+        print(f"Golden URL registry has {len(golden_urls)} URLs across {len(categories)} categories")
         print(f"  Categories: {', '.join(categories)}")
         print(f"  Domains: {', '.join(self.golden_registry.get_all_domains())}")
     
@@ -80,7 +80,7 @@ class TestExtractors:
                 assert "." in field_path or field_path.startswith("specifications"), \
                     f"Field path should be nested: {field_path}"
         
-        print("✓ All golden URLs have proper structure")
+        print("All golden URLs have proper structure")
     
     def test_schema_validation_with_golden_expectations(self):
         """Test schema validation against golden URL expectations"""
@@ -121,7 +121,7 @@ class TestExtractors:
         assert not is_low, "Should not be flagged as low coverage"
         assert model.product.category == "electronics"
         
-        print(f"✓ Schema validation works with golden expectations: coverage={coverage:.2f}")
+        print(f"Schema validation works with golden expectations: coverage={coverage:.2f}")
     
     @pytest.mark.skipif(not os.getenv('TAVILY_API_KEY'), reason="Tavily API key not available")
     def test_tavily_client_basic(self):
@@ -153,7 +153,7 @@ class TestExtractors:
         assert len(categorized["ecom"]) > 0, "Should categorize Amazon as ecom"
         assert len(categorized["review"]) > 0, "Should categorize TechRadar as review"
         
-        print("✓ Tavily client basic functionality works")
+        print("Tavily client basic functionality works")
     
     @pytest.mark.skipif(not os.getenv('OPENAI_API_KEY'), reason="OpenAI API key not available")  
     def test_llm_extractor_prompts(self):
@@ -174,7 +174,7 @@ IMPORTANT: Determine the product category first, then extract appropriate specif
         assert "category" in ecom_prompt.lower()
         assert "determine" in ecom_prompt.lower()
         
-        print("✓ LLM extractor prompts are properly structured")
+        print("LLM extractor prompts are properly structured")
     
     @pytest.mark.skipif(not (os.getenv('TAVILY_API_KEY') and os.getenv('OPENAI_API_KEY')), reason="API keys not available for full integration test")
     def test_hybrid_extraction_integration(self):
@@ -194,9 +194,9 @@ IMPORTANT: Determine the product category first, then extract appropriate specif
             if result:
                 assert "url" in result
                 assert "domain" in result
-                print("✓ Hybrid extraction integration test passed")
+                print("Hybrid extraction integration test passed")
             else:
-                print("✓ Hybrid extraction gracefully handled failed extraction")
+                print("Hybrid extraction gracefully handled failed extraction")
                 
         except Exception as e:
             # Log the error but don't fail the test for network issues
@@ -246,7 +246,7 @@ IMPORTANT: Determine the product category first, then extract appropriate specif
             assert coverage >= test_case["min_coverage"], \
                 f"{test_case['name']} should have coverage >= {test_case['min_coverage']}, got {coverage}"
             
-            print(f"✓ {test_case['name']}: coverage={coverage:.2f}")
+            print(f"{test_case['name']}: coverage={coverage:.2f}")
     
     def test_dynamic_specifications_validation(self):
         """Test that dynamic specifications work for various categories"""
@@ -291,7 +291,7 @@ IMPORTANT: Determine the product category first, then extract appropriate specif
             assert coverage > 0.5, f"{category} should have reasonable coverage, got {coverage}"
             assert model.product.category == category
             
-            print(f"✓ {category.title()}: coverage={coverage:.2f}, specs={len(specs)}")
+            print(f"{category.title()}: coverage={coverage:.2f}, specs={len(specs)}")
 
 if __name__ == "__main__":
     # Run tests manually if needed
@@ -307,8 +307,8 @@ if __name__ == "__main__":
         test_instance.test_coverage_computation_categories()
         test_instance.test_dynamic_specifications_validation()
         
-        print("\n🎉 All extractor tests passed!")
+        print("\nAll extractor tests passed!")
         
     except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+        print(f"\nTest failed: {e}")
         sys.exit(1)

@@ -43,7 +43,7 @@ class TestCredibilityScorer:
         score = self.scorer._score_domain_reputation("https://unknownshop.com/product/laptop")
         assert score == 0.50, f"Unknown e-commerce domain should get boosted score, got {score}"
         
-        print("✓ Domain reputation scoring works correctly")
+        print("Domain reputation scoring works correctly")
     
     def test_recency_scoring(self):
         """Test recency scoring based on publication dates"""
@@ -90,7 +90,7 @@ class TestCredibilityScorer:
         score = self.scorer._score_recency(None)
         assert score == 0.60, f"No date info should get default 0.60, got {score}"
         
-        print("✓ Recency scoring works correctly")
+        print("Recency scoring works correctly")
     
     def test_extractability_scoring(self):
         """Test extractability scoring based on data structure quality"""
@@ -149,7 +149,7 @@ class TestCredibilityScorer:
         score = self.scorer._score_extractability(rich_review_data)
         assert score >= 0.85, f"Rich review data should get high score, got {score}"
         
-        print("✓ Extractability scoring works correctly")
+        print("Extractability scoring works correctly")
     
     def test_content_quality_scoring(self):
         """Test content quality scoring based on completeness and consistency"""
@@ -200,7 +200,7 @@ class TestCredibilityScorer:
         score = self.scorer._score_content_quality(poor_data)
         assert score <= 0.30, f"Poor quality content should get low score, got {score}"
         
-        print("✓ Content quality scoring works correctly")
+        print("Content quality scoring works correctly")
     
     def test_overall_credibility_scoring(self):
         """Test overall credibility scoring integration"""
@@ -261,7 +261,7 @@ class TestCredibilityScorer:
         assert score_result["overall_score"] <= 0.50, f"Low credibility source should score <= 0.50, got {score_result['overall_score']}"
         assert score_result["credibility_tier"] in ["low", "very_low"], f"Should be low/very_low tier, got {score_result['credibility_tier']}"
         
-        print("✓ Overall credibility scoring works correctly")
+        print("Overall credibility scoring works correctly")
     
     def test_batch_scoring(self):
         """Test batch scoring and sorting functionality"""
@@ -319,7 +319,7 @@ class TestCredibilityScorer:
         bottom_domain = scored_sources[-1]["credibility_score"]["url"]
         assert "unknown-site.com" in bottom_domain, f"Bottom source should be unknown domain, got {bottom_domain}"
         
-        print("✓ Batch scoring and sorting works correctly")
+        print("Batch scoring and sorting works correctly")
     
     def test_credibility_tiers(self):
         """Test credibility tier determination"""
@@ -329,7 +329,7 @@ class TestCredibilityScorer:
         assert self.scorer._determine_credibility_tier(0.50) == "low"
         assert self.scorer._determine_credibility_tier(0.30) == "very_low"
         
-        print("✓ Credibility tier determination works correctly")
+        print("Credibility tier determination works correctly")
     
     def test_scoring_summary(self):
         """Test scoring methodology summary"""
@@ -349,7 +349,7 @@ class TestCredibilityScorer:
         )
         assert abs(total_weight - 1.0) < 0.01, f"Component weights should sum to 1.0, got {total_weight}"
         
-        print("✓ Scoring summary works correctly")
+        print("Scoring summary works correctly")
 
 if __name__ == "__main__":
     # Run tests manually if needed
@@ -368,8 +368,8 @@ if __name__ == "__main__":
         test_instance.test_credibility_tiers()
         test_instance.test_scoring_summary()
         
-        print("\n🎉 All credibility scorer tests passed!")
+        print("\nAll credibility scorer tests passed!")
         
     except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+        print(f"\nTest failed: {e}")
         sys.exit(1)

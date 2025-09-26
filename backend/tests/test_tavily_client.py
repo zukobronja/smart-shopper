@@ -171,7 +171,7 @@ class TestOptimizedTavilyClient:
 # Standalone test functions for Jupyter notebook usage
 async def notebook_test_basic():
     """Simplified test for notebook execution"""
-    print("📓 Notebook Test - OptimizedTavilyClient Basic")
+    print("Notebook Test - OptimizedTavilyClient Basic")
     
     client = create_dev_client()
     
@@ -189,10 +189,10 @@ async def notebook_test_basic():
 async def notebook_test_with_api():
     """API test for notebook execution (requires API key)"""
     if not os.getenv('TAVILY_API_KEY'):
-        print("⚠️  No Tavily API key found")
+        print("No Tavily API key found")
         return None
     
-    print("📓 Notebook Test - OptimizedTavilyClient API")
+    print("Notebook Test - OptimizedTavilyClient API")
     
     client = create_dev_client()
     

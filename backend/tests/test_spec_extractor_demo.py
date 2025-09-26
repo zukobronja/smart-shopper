@@ -4,7 +4,7 @@ SpecExtractorAgent Integration Demo
 
 Demonstrates the Universal SpecExtractorAgent extracting specifications
 from diverse product categories using the 3-agent pipeline:
-QueryOrchestrator → TavilyRetriever → CredibilityFilter → SpecExtractor
+QueryOrchestrator -> TavilyRetriever -> CredibilityFilter -> SpecExtractor
 """
 import asyncio
 import sys
@@ -20,7 +20,7 @@ from app.agents.state import create_initial_state, SearchQuery
 
 def test_category_detection():
     """Test universal category detection across product types"""
-    print("\n🔍 Testing Universal Category Detection")
+    print("\nTesting Universal Category Detection")
     print("=" * 50)
     
     # Use just the detector component, not the full agent
@@ -59,17 +59,17 @@ def test_category_detection():
     correct_predictions = 0
     for title, expected_category in test_products:
         detected_category = detector.detect_category(title)
-        status = "✅" if detected_category == expected_category else "❌"
-        print(f"{status} {title[:40]:40} → {detected_category:12} (expected: {expected_category})")
+        status = "" if detected_category == expected_category else ""
+        print(f"{status} {title[:40]:40} -> {detected_category:12} (expected: {expected_category})")
         if detected_category == expected_category:
             correct_predictions += 1
     
     accuracy = correct_predictions / len(test_products) * 100
-    print(f"\n🎯 Category Detection Accuracy: {accuracy:.1f}% ({correct_predictions}/{len(test_products)})")
+    print(f"\nCategory Detection Accuracy: {accuracy:.1f}% ({correct_predictions}/{len(test_products)})")
 
 def test_spec_extraction():
     """Test specification extraction from different product types"""
-    print("\n🔧 Testing Dynamic Specification Extraction")
+    print("\nTesting Dynamic Specification Extraction")
     print("=" * 50)
     
     # Use just the extraction components, not the full agent
@@ -142,7 +142,7 @@ def test_spec_extraction():
     ]
     
     for test_case in test_cases:
-        print(f"\n📱 {test_case['name']}:")
+        print(f"\n {test_case['name']}:")
         print("-" * 30)
         
         specs = spec_extractor.extract_specs(test_case["content"], "general")
@@ -158,13 +158,13 @@ def test_spec_extraction():
         
         print(f"   Extracted {len(normalized_specs)} specifications:")
         for key, value in normalized_specs.items():
-            print(f"   • {key}: {value}")
+            print(f"   - {key}: {value}")
         
-        print(f"   📊 Coverage: {coverage:.1f}% ({found_fields}/{len(test_case['expected_fields'])} expected fields)")
+        print(f"    Coverage: {coverage:.1f}% ({found_fields}/{len(test_case['expected_fields'])} expected fields)")
 
 async def test_pipeline_integration():
     """Test SpecExtractorAgent integration with pipeline state"""
-    print("\n🚀 Testing Pipeline Integration")
+    print("\nTesting Pipeline Integration")
     print("=" * 50)
     
     # Mock the LLM to avoid needing real API key
@@ -254,15 +254,15 @@ async def test_pipeline_integration():
         if specs:
             print(f"      Specs: {len(specs)} extracted")
             for key, value in list(specs.items())[:3]:  # Show first 3 specs
-                print(f"        • {key}: {value}")
+                print(f"        - {key}: {value}")
             if len(specs) > 3:
-                print(f"        • ... and {len(specs) - 3} more")
+                print(f"        - ... and {len(specs) - 3} more")
     
-    print(f"\n✅ Pipeline integration successful!")
+    print(f"\n Pipeline integration successful!")
 
 def main():
     """Run all SpecExtractorAgent demonstrations"""
-    print("🌟 SpecExtractorAgent Universal Product Demo")
+    print(" SpecExtractorAgent Universal Product Demo")
     print("=" * 60)
     print(f"Timestamp: {datetime.now().isoformat()}")
     
@@ -277,21 +277,21 @@ def main():
         asyncio.run(test_pipeline_integration())
         
         print("\n" + "=" * 60)
-        print("🎉 ALL DEMONSTRATIONS COMPLETED SUCCESSFULLY!")
+        print(" ALL DEMONSTRATIONS COMPLETED SUCCESSFULLY!")
         print("=" * 60)
-        print("\n✅ Universal Category Detection: Working across all product types")
-        print("✅ Dynamic Spec Extraction: Adapts to any product category")  
-        print("✅ Pattern Recognition: Handles diverse content formats")
-        print("✅ Unit Normalization: Standardizes measurements")
-        print("✅ Pipeline Integration: Seamless state management")
-        print("✅ Coverage Calculation: Measures extraction quality")
-        print("✅ LLM Enhancement: Fills gaps in extraction")
+        print("\nUniversal Category Detection: Working across all product types")
+        print(" Dynamic Spec Extraction: Adapts to any product category")  
+        print(" Pattern Recognition: Handles diverse content formats")
+        print(" Unit Normalization: Standardizes measurements")
+        print(" Pipeline Integration: Seamless state management")
+        print(" Coverage Calculation: Measures extraction quality")
+        print(" LLM Enhancement: Fills gaps in extraction")
         
-        print("\n➡️ SpecExtractorAgent is ready for production!")
-        print("🚀 Next step: Implement ResultsRankerAgent for final ranking")
+        print("\nSpecExtractorAgent is ready for production!")
+        print(" Next step: Implement ResultsRankerAgent for final ranking")
         
     except Exception as e:
-        print(f"\n❌ Demo failed: {e}")
+        print(f"\n Demo failed: {e}")
         import traceback
         traceback.print_exc()
         return False

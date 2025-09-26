@@ -31,7 +31,7 @@ backend/tests/
 - `test_fixes_verification.py`: Regression harness for specific defects documented in `BUG_TRACKER.md`; prevents reintroducing previously fixed issues.
 - `test_graph_foundation.py`: Confirms the LangGraph state machine, configuration profiles, and placeholder nodes compile and execute with the mocked state.
 - `test_integration.py`: Runs cross-cutting integration checks against the extraction pipeline ensuring orchestration between clients, scorers, and validators.
-- `test_optimized_tavily.py`: Validates query optimisation, two-step search→extract flow, fallback handling, and cost guards in `OptimizedTavilyClient`.
+- `test_optimized_tavily.py`: Validates query optimisation, two-step search->extract flow, fallback handling, and cost guards in `OptimizedTavilyClient`.
 - `test_phase2_verification.py`: Protects Phase 2 deliverables (auth core, API scaffolding) from regressions.
 - `test_phase3_verification.py`: Ensures the end-to-end extraction system and golden URL coverage targets remain intact.
 - `test_phase4_verification.py`: Validates Phase 4 groundwork, including LangGraph agent wiring, state transitions, and cost/time limits.
