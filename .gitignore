@@ -161,7 +161,7 @@ docs
 
 
 # Environment Configuration (contains sensitive data)
-.ebextensions/environment.config
+# .ebextensions/environment.config
 
 # Docker Configuration (contains sensitive data)
 # Dockerfile
