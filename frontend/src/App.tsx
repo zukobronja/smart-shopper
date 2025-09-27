@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Heart } from "lucide-react";
+import { Heart, Github } from "lucide-react";
 import "./App.css";
 import { searchProducts } from "./services/search";
 import { fetchGoogleAuthorizationUrl } from "./services/auth";
@@ -834,6 +834,9 @@ export default function App() {
           <div className="footer-copyright">© {new Date().getFullYear()} SmartShopper</div>
           <div className="footer-links">
             <a href="mailto:zuko.bronja@gmail.com" className="footer-link">Contact</a>
+            <a href="https://github.com/zukobronja/smart-shopper" target="_blank" rel="noopener noreferrer" className="footer-link" title="View source code on GitHub">
+              <Github className="icon icon-inline" size={16} aria-hidden="true" />
+            </a>
           </div>
         </div>
       </footer>
