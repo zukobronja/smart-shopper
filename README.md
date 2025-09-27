@@ -122,28 +122,10 @@ RSS ingestion operates as a **completely independent background worker** that co
 - **Production Ready**: Handles deduplication, bot detection avoidance, and graceful error recovery
 
 ```
-+------------------+      +-------------------------+      +-----------------------+
-| RSS Feed Registry|----->| Poller & Fetcher Worker |----->| Item Normalizer       |
-| (rss_feeds)      |      | (async schedule)        |      | (dedupe, classify)    |
-+------------------+      +-----------+-------------+      +-----------+-----------+
-                                         |                            |
-                                         v                            v
-                                +--------+--------+         +--------+--------+
-                                | Embedding Jobs  |         | Link to Agents  |
-                                | (OpenAI/MiniLM) |         | (enqueue tasks) |
-                                +--------+--------+         +--------+--------+
-                                         |                            |
-                                         v                            |
-                                +--------+--------+                   |
-                                | Persistence     |<------------------+
-                                | (rss_items)     |
-                                +--------+--------+
-                                         |
-                                         v
-                                +--------+--------+
-                                | Atlas Vector    |
-                                | Index (MongoDB) |
-                                +-----------------+
++------------------+      +-------------------------+      +------------------+      +------------------+      +------------------+
+| RSS Feed Registry|----->| Poller & Fetcher Worker |----->| Embedding Jobs   |----->| Persistence      |----->| Atlas Vector     |
+| (rss_feeds)      |      | (async schedule)        |      | (OpenAI/MiniLM)  |      | (rss_items)      |      | Index (MongoDB)  |
++------------------+      +-------------------------+      +------------------+      +------------------+      +------------------+
 ```
 
 ## LangGraph Multi-Agent Pipeline
