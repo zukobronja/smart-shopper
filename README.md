@@ -351,7 +351,7 @@ eb init && eb create && eb deploy
 
 ## Authors
 
-- **Zuko Bronja** - *Project creator* - [zuko.bronja@gmail.com](mailto:zuko.bronja@gmail.com)
+- **Zuko Bronja** - *Creator and maintainer* - [zuko.bronja@gmail.com](mailto:zuko.bronja@gmail.com)
 
 ## License
 
