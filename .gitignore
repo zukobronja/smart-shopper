@@ -164,7 +164,7 @@ docs
 .ebextensions/environment.config
 
 # Docker Configuration (contains sensitive data)
-# Dockerfile
+Dockerfile
 
 # UV lock file (Python dependency management)
 uv.lock
