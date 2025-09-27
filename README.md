@@ -349,6 +349,10 @@ eb init && eb create && eb deploy
 - Database operation testing
 - Frontend component testing
 
+## Authors
+
+- **Zuko Bronja** - *Author* - [zuko.bronja@gmail.com](mailto:zuko.bronja@gmail.com)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

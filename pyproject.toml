@@ -3,6 +3,10 @@ name = "smartshopper"
 version = "0.1.0"
 description = "SmartShopper - Product search and comparison with deal alerts"
 readme = "README.md"
+authors = [
+    {name = "Zuko Bronja", email = "zuko.bronja@gmail.com"}
+]
+license = {text = "MIT"}
 requires-python = ">=3.12"
 dependencies = [
     # FastAPI

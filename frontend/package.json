@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "description": "SmartShopper frontend - React app for product search and comparison",
+  "author": "Zuko Bronja <zuko.bronja@gmail.com>",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
