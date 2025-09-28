@@ -22,24 +22,32 @@ SmartShopper helps users find the **best products, prices, and deals** by combin
 ## High-Level Architecture
 
 ```
-Frontend (React + Tailwind + shadcn/ui + Recharts)
+Frontend (React + Tailwind + Glass Morphism UI)
         │
         ▼
 Backend API (FastAPI, Python)
         │  ┌───────────────────────────────────────────────────────────────┐
-        │  │   LangGraph Multi-Agent Pipeline                              │
-        │  │   Orchestrator -> Source Planner -> Retrievers (Whitelist/Tavily)│
-        │  │   -> Credibility Filter -> Entity Resolver -> Spec Extractor      │
-        │  │   -> Reviews & Sentiment -> Price Aggregator -> Ranker            │
-        │  │   -> Persistence -> Exporter/Notifier                            │
+        │  │   LangGraph 5-Agent Pipeline (Production Implementation)      │
+        │  │                                                               │
+        │  │   QueryOrchestrator → RetrievalSplitter                      │
+        │  │            ↓              ↙        ↘                          │
+        │  │   TavilyRetriever    RSSVectorRetriever                      │
+        │  │            ↓              ↓                                   │
+        │  │   CredibilityFilter   RSSResultAdapter                       │
+        │  │            ↓              ↓                                   │
+        │  │   SpecExtractor    ──→  ResultFusion  ←──                    │
+        │  │                           ↓                                   │
+        │  │                    ResultsRanker                             │
+        │  │                           ↓                                   │
+        │  │                   Persistence & Response                     │
         │  └───────────────────────────────────────────────────────────────┘
         │
         ▼
-MongoDB Atlas (DB + Atlas Search + Vector Search)
-      ├─ products, listings, reviews, price_history
-      ├─ rss_items, sources, runs
-      ├─ users, oauth_sessions, refresh_tokens, watches, alert_events
-      └─ product_aliases (helper), goldens (tests)
+MongoDB Atlas (DB + Vector Search + Authentication)
+      ├─ search_runs, users, favorites (user data)
+      ├─ rss_feeds, rss_items (background ingestion)
+      ├─ products, listings, reviews (canonical data)
+      └─ sources, oauth_sessions (metadata & auth)
 ```
 
 **Data sources:**
